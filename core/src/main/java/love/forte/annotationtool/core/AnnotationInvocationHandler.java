@@ -142,9 +142,9 @@ public class AnnotationInvocationHandler implements InvocationHandler, Serializa
         } else {
             switch (name) {
                 case "toString":
-                    return this.toStringImpl();
+                    return this.toString0();
                 case "hashCode":
-                    return this.hashCodeImpl();
+                    return this.hashCode0();
                 case "annotationType":
                     return this.type;
                 default:
@@ -304,8 +304,8 @@ public class AnnotationInvocationHandler implements InvocationHandler, Serializa
         }
     }
 
-    private String toStringImpl() {
-        StringBuilder builder = new StringBuilder(128);
+    private String toString0() {
+        StringBuilder builder = new StringBuilder(32);
         builder.append('@');
         builder.append(this.type.getName());
         builder.append('(');
@@ -383,16 +383,11 @@ public class AnnotationInvocationHandler implements InvocationHandler, Serializa
         }
     }
 
-    private int hashCodeImpl() {
+    private int hashCode0() {
         int hash = 0;
-
-        Map.Entry<String, Object> entries;
-
-        Iterator<Map.Entry<String, Object>> iter = this.memberValues.entrySet().iterator();
-        for (; iter.hasNext(); hash += 127 * entries.getKey().hashCode() ^ memberValueHashCode(entries.getValue())) {
-            entries = iter.next();
+        for (Map.Entry<String, Object> stringObjectEntry : this.memberValues.entrySet()) {
+            hash += 127 * stringObjectEntry.getKey().hashCode() ^ memberValueHashCode(stringObjectEntry.getValue());
         }
-
         return hash;
     }
 
