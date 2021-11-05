@@ -18,10 +18,10 @@ subprojects {
     }
 
     dependencies {
-        testImplementation("org.junit.jupiter:junit-jupiter-api:5.8.1")
-        testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.8.1")
-        compileOnly("org.jetbrains:annotations:22.0.0")
-        testCompileOnly("org.jetbrains:annotations:22.0.0")
+        testImplementation(V.Jupiter.Api.NOTATION)
+        testRuntimeOnly(V.Jupiter.Engine.NOTATION)
+        compileOnly(V.Jetbrains.Annotations.NOTATION)
+        testCompileOnly(V.Jetbrains.Annotations.NOTATION)
     }
 
     tasks.getByName<Test>("test") {
@@ -29,6 +29,4 @@ subprojects {
     }
 }
 
-tasks.getByName<Test>("test") {
-    useJUnitPlatform()
-}
+

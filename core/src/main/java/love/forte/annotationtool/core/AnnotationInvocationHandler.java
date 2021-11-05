@@ -56,7 +56,7 @@ public class AnnotationInvocationHandler implements InvocationHandler, Serializa
     }
 
     private static LinkedHashMap<String, Object> resolveMemberValues(@Nullable Map<String, Object> memberValues, Class<? extends Annotation> annotationType, @Nullable Annotation instance) {
-        final LinkedHashMap<String, Object> newMemberValues = memberValues == null ? new LinkedHashMap<>() : new LinkedHashMap<>(memberValues);
+        final LinkedHashMap<String, Object> newMemberValues = new LinkedHashMap<>();
 
         final Method[] methods = annotationType.getMethods();
 
@@ -65,12 +65,12 @@ public class AnnotationInvocationHandler implements InvocationHandler, Serializa
                 for (Method method : methods) {
                     final String name = method.getName();
                     Class<?>[] parameterTypes = method.getParameterTypes();
-                    if (parameterTypes.length > 0) {
+
+                    final boolean doContinue = nameFound(name, parameterTypes, memberValues, newMemberValues);
+                    if (doContinue) {
                         continue;
                     }
-                    if (OBJ_METHOD.contains(name)) {
-                        continue;
-                    }
+
                     if (!newMemberValues.containsKey(name)) {
                         method.setAccessible(true);
                         newMemberValues.put(name, method.invoke(instance));
@@ -85,10 +85,9 @@ public class AnnotationInvocationHandler implements InvocationHandler, Serializa
             for (Method method : methods) {
                 final String name = method.getName();
                 Class<?>[] parameterTypes = method.getParameterTypes();
-                if (parameterTypes.length > 0) {
-                    continue;
-                }
-                if (OBJ_METHOD.contains(name)) {
+
+                final boolean doContinue = nameFound(name, parameterTypes, memberValues, newMemberValues);
+                if (doContinue) {
                     continue;
                 }
 
@@ -107,6 +106,24 @@ public class AnnotationInvocationHandler implements InvocationHandler, Serializa
 
 
         return newMemberValues;
+    }
+
+    private static boolean nameFound(String name, Class<?>[] parameterTypes, Map<String, Object> memberValues, Map<String, Object> newMemberValues) {
+        if (parameterTypes.length > 0) {
+            return true;
+        }
+        if (OBJ_METHOD.contains(name)) {
+            return true;
+        }
+
+        if (memberValues != null) {
+            final Object value = memberValues.get(name);
+            if (value != null) {
+                newMemberValues.put(name, value);
+            }
+        }
+
+        return false;
     }
 
     /**
