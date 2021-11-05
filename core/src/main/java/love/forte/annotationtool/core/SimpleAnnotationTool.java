@@ -58,7 +58,7 @@ class SimpleAnnotationTool implements AnnotationTool {
     @Override
     public <A extends Annotation> @Nullable A getAnnotation(AnnotatedElement from, Class<A> annotationType, @NotNull Set<String> exclude) {
         if (EXCLUDE_META_ANNOTATION.contains(annotationType.getName())) {
-            // If you really want to get a meta-annotation, just get, but no deep.
+            // If you really want to get meta-annotation, just get, but no deep.
             return from.getAnnotation(annotationType);
         }
 
@@ -81,6 +81,12 @@ class SimpleAnnotationTool implements AnnotationTool {
         // TODO
         return null;
     }
+
+
+
+
+
+
 
 
     @Override
