@@ -22,7 +22,7 @@ public final class AnnotationTools {
     private static final AnnotationTool DEFAULT = new SimpleAnnotationTool(
             new LinkedHashMap<>(),
             new LinkedHashMap<>(),
-            Converters.nonConverters(), true);
+            Converters.nonConverters());
 
     /**
      * Get Default annotation tool.
@@ -51,13 +51,11 @@ public final class AnnotationTools {
         final Map<AnnotatedElement, Map<Class<? extends Annotation>, Annotation>> cacheMap = configuration.getCacheMap();
         final Map<AnnotatedElement, Set<Class<? extends Annotation>>> nullCacheMap = configuration.getNullCacheMap();
         final Converters converters = configuration.getConverters();
-        final boolean mixAllRepeatable = configuration.isMixAllRepeatable();
 
         return new SimpleAnnotationTool(
                 or(cacheMap, LinkedHashMap::new),
                 or(nullCacheMap, LinkedHashMap::new),
-                or(converters, Converters::nonConverters),
-                mixAllRepeatable
+                or(converters, Converters::nonConverters)
         );
 
     }

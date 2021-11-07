@@ -22,7 +22,7 @@ public final class NonConverters implements Converters {
     @Override
     @SuppressWarnings("unchecked")
     @NotNull
-    public <FROM, TO> TO convert(@Nullable Class<FROM> from, @NotNull Class<TO> to, @NotNull FROM instance) {
+    public <FROM, TO> TO convert(@Nullable Class<FROM> from, @NotNull FROM instance, @NotNull Class<TO> to) {
         Objects.requireNonNull(to, "to type must not be null");
         Objects.requireNonNull(instance, "instance must not be null");
         if (from == null) {

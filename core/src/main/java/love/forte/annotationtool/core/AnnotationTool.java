@@ -43,6 +43,34 @@ public interface AnnotationTool {
     @NotNull
     Map<String, Object> getAnnotationValues(@NotNull Annotation annotation);
 
+    /**
+     * Get annotation property names.
+     * @param annotation An annotation instance.
+     * @return a mutable set.
+     */
+    @NotNull
+    Set<String> getPropertyNames(@NotNull Annotation annotation);
+
+
+    /**
+     * Get annotation type's value types.
+     * @param annotationType An annotation instance type.
+     * @return a mutable map.
+     */
+    @NotNull
+    Map<String, Class<?>> getAnnotationValueTypes(@NotNull Class<? extends Annotation> annotationType);
+
+
+    /**
+     * Create an annotation proxy instance.
+     * @param annotationType annotation type.
+     * @param classLoader classLoader.
+     * @param properties annotation's properties.
+     * @param base base annotation.
+     * @return annotation proxy instance.
+     */
+    @NotNull
+    <A extends Annotation> A createAnnotationInstance(@NotNull Class<A> annotationType, @NotNull ClassLoader classLoader, @Nullable Map<String, Object> properties, @Nullable A base);
 
     /**
      * Create an annotation proxy instance.
@@ -52,7 +80,9 @@ public interface AnnotationTool {
      * @return annotation proxy instance.
      */
     @NotNull
-    <A extends Annotation> A createAnnotationInstance(@NotNull Class<A> annotationType, @NotNull ClassLoader classLoader, @Nullable Map<String, Object> properties);
+    default <A extends Annotation> A createAnnotationInstance(@NotNull Class<A> annotationType, @NotNull ClassLoader classLoader, @Nullable Map<String, Object> properties) {
+        return createAnnotationInstance(annotationType, classLoader, properties, null);
+    }
 
     
     /**

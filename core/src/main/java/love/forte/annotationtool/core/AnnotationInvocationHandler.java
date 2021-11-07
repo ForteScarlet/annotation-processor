@@ -6,6 +6,7 @@ import org.jetbrains.annotations.Nullable;
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
 import java.lang.annotation.AnnotationFormatError;
+import java.lang.annotation.AnnotationTypeMismatchException;
 import java.lang.annotation.IncompleteAnnotationException;
 import java.lang.reflect.*;
 import java.security.AccessController;
@@ -22,93 +23,114 @@ public class AnnotationInvocationHandler implements InvocationHandler, Serializa
     private static final long serialVersionUID = 1145141919810L;
     private static final Set<String> OBJ_METHOD = new HashSet<>(Arrays.asList("toString", "hashCode", "annotationType"));
 
+    private final AnnotationMetadata<?> metadata;
+
     private final Class<? extends Annotation> type;
+    // private final Map<String, Object> memberValues;
+    // private final Map<String, TypeValue> memberValues;
+
     private final Map<String, Object> memberValues;
+
     @Nullable
     private final Annotation baseAnnotation;
 
     private transient volatile Method[] memberMethods = null;
 
     Map<String, Object> getMemberValuesMap() {
-        return memberValues;
+        return new LinkedHashMap<>(memberValues);
+    }
+
+    Map<String, Class<?>> getMemberTypesMap() {
+        return metadata.getPropertyTypes();
     }
 
     public Object get(String key) {
         return memberValues.get(key);
     }
 
-    <T extends Annotation> AnnotationInvocationHandler(
-            Class<T> annotationType,
-            Map<String, Object> memberValues,
-            @Nullable Annotation baseAnnotation
+
+    <A extends Annotation> AnnotationInvocationHandler(
+            AnnotationMetadata<A> metadata,
+            @Nullable Map<String, Object> memberValues,
+            @Nullable A baseAnnotation
     ) {
-        this.type = annotationType;
+        this.metadata = metadata;
+
+        this.type = metadata.getAnnotationType();
         this.baseAnnotation = baseAnnotation;
 
-        this.memberValues = resolveMemberValues(memberValues, annotationType, baseAnnotation);
+        this.memberValues = resolveMemberValues(memberValues, metadata, baseAnnotation);
     }
 
-    <T extends Annotation> AnnotationInvocationHandler(
-            Class<T> annotationType,
+    <A extends Annotation> AnnotationInvocationHandler(
+            AnnotationMetadata<A> metadata,
+            @Nullable A baseAnnotation
+    ) {
+        this(metadata, null, baseAnnotation);
+    }
+
+    <A extends Annotation> AnnotationInvocationHandler(
+            AnnotationMetadata<A> metadata,
+            Map<String, Object> memberValues
+    ) {
+        this(metadata, memberValues, null);
+    }
+
+    <A extends Annotation> AnnotationInvocationHandler(
+            Class<A> annotationType,
+            @Nullable Map<String, Object> memberValues,
+            @Nullable A baseAnnotation
+    ) {
+        this(AnnotationMetadata.resolve(annotationType), memberValues, baseAnnotation);
+    }
+
+    <A extends Annotation> AnnotationInvocationHandler(
+            Class<A> annotationType,
+            @Nullable A baseAnnotation
+    ) {
+        this(annotationType, null, baseAnnotation);
+    }
+
+    <A extends Annotation> AnnotationInvocationHandler(
+            Class<A> annotationType,
             Map<String, Object> memberValues
     ) {
         this(annotationType, memberValues, null);
     }
 
-    private static LinkedHashMap<String, Object> resolveMemberValues(@Nullable Map<String, Object> memberValues, Class<? extends Annotation> annotationType, @Nullable Annotation instance) {
-        final LinkedHashMap<String, Object> newMemberValues = new LinkedHashMap<>();
 
-        final Method[] methods = annotationType.getMethods();
-
-        if (instance != null) {
-            try {
-                for (Method method : methods) {
-                    final String name = method.getName();
-                    Class<?>[] parameterTypes = method.getParameterTypes();
-
-                    final boolean doContinue = nameFound(name, parameterTypes, memberValues, newMemberValues);
-                    if (doContinue) {
-                        continue;
-                    }
-
-                    if (!newMemberValues.containsKey(name)) {
-                        method.setAccessible(true);
-                        newMemberValues.put(name, method.invoke(instance));
-                    }
-                }
-            } catch (InvocationTargetException | IllegalAccessException e) {
-                throw new IllegalStateException(e);
-            }
-
-
-        } else {
-            for (Method method : methods) {
-                final String name = method.getName();
-                Class<?>[] parameterTypes = method.getParameterTypes();
-
-                final boolean doContinue = nameFound(name, parameterTypes, memberValues, newMemberValues);
-                if (doContinue) {
-                    continue;
-                }
-
-                // instance null
-                final Object defaultValue = method.getDefaultValue();
-                if (defaultValue != null) {
-                    newMemberValues.putIfAbsent(name, defaultValue);
-                } else {
-                    // null, check member values.
-                    if (!newMemberValues.containsKey(name)) {
-                        throw new IncompleteAnnotationException(annotationType, name);
-                    }
-                }
-            }
+    private static <A extends Annotation> LinkedHashMap<String, Object> resolveMemberValues(@Nullable Map<String, Object> memberValues, AnnotationMetadata<A> metadata, @Nullable A instance) {
+        if (memberValues == null) {
+            memberValues = Collections.emptyMap();
         }
+        final LinkedHashMap<String, Object> newMemberValues = new LinkedHashMap<>();
+        final Set<String> names = metadata.getPropertyNames();
+        try {
 
+            for (String name : names) {
+                Object value = memberValues.get(name);
+                if (value == null) {
+                    if (instance != null) {
+                        value = metadata.getAnnotationValue(name, instance);
+                    } else {
+                        value = metadata.getPropertyDefaultValue(name);
+                        if (value == null) {
+                            throw new IncompleteAnnotationException(metadata.getAnnotationType(), name);
+                        }
+                    }
+                }
+
+                newMemberValues.put(name, value);
+            }
+
+        } catch (ReflectiveOperationException e) {
+            throw new IllegalStateException(e);
+        }
 
         return newMemberValues;
     }
 
-    private static boolean nameFound(String name, Class<?>[] parameterTypes, Map<String, Object> memberValues, Map<String, Object> newMemberValues) {
+    private static boolean nameFound(String name, Class<?>[] parameterTypes, Map<String, Object> memberValues, LinkedHashMap<String, TypeValue> newMemberValues) {
         if (parameterTypes.length > 0) {
             return true;
         }
@@ -119,7 +141,7 @@ public class AnnotationInvocationHandler implements InvocationHandler, Serializa
         if (memberValues != null) {
             final Object value = memberValues.get(name);
             if (value != null) {
-                newMemberValues.put(name, value);
+                newMemberValues.put(name, new TypeValue(value.getClass(), value));
             }
         }
 
@@ -164,7 +186,7 @@ public class AnnotationInvocationHandler implements InvocationHandler, Serializa
 
 
                     if (value.getClass().isArray() && Array.getLength(value) != 0) {
-                        value = this.cloneArray(value);
+                        value = ArrayUtil.cloneArray(value);
                     }
 
                     return value;
@@ -220,8 +242,8 @@ public class AnnotationInvocationHandler implements InvocationHandler, Serializa
     private Method[] getMemberMethods() {
         if (this.memberMethods == null) {
             this.memberMethods = AccessController.doPrivileged((PrivilegedAction<Method[]>) () -> {
-                Method[] methods = AnnotationInvocationHandler.this.type.getDeclaredMethods();
-                AnnotationInvocationHandler.this.validateAnnotationMethods(methods);
+                Method[] methods = type.getDeclaredMethods();
+                validateAnnotationMethods(methods);
                 AccessibleObject.setAccessible(methods, true);
                 return methods;
             });
@@ -311,9 +333,9 @@ public class AnnotationInvocationHandler implements InvocationHandler, Serializa
         builder.append('(');
         boolean first = true;
 
-        final Set<Map.Entry<String, Object>> entries = this.memberValues.entrySet();
+        final Set<Map.Entry<String, TypeValue>> entries = this.memberValues.entrySet();
 
-        for (Map.Entry<String, Object> entry : entries) {
+        for (Map.Entry<String, TypeValue> entry : entries) {
             if (first) {
                 first = false;
             } else {
@@ -322,7 +344,7 @@ public class AnnotationInvocationHandler implements InvocationHandler, Serializa
 
             builder.append(entry.getKey());
             builder.append('=');
-            builder.append(memberValueToString(entry.getValue()));
+            builder.append(memberValueToString(entry.getValue().value));
         }
 
         builder.append(')');
@@ -360,33 +382,10 @@ public class AnnotationInvocationHandler implements InvocationHandler, Serializa
     }
 
 
-    private Object cloneArray(Object originalArray) {
-        Class<?> arrayClass = originalArray.getClass();
-        if (arrayClass == byte[].class) {
-            return ((byte[]) originalArray).clone();
-        } else if (arrayClass == char[].class) {
-            return ((char[]) originalArray).clone();
-        } else if (arrayClass == double[].class) {
-            return ((double[]) originalArray).clone();
-        } else if (arrayClass == float[].class) {
-            return ((float[]) originalArray).clone();
-        } else if (arrayClass == int[].class) {
-            return ((int[]) originalArray).clone();
-        } else if (arrayClass == long[].class) {
-            return ((long[]) originalArray).clone();
-        } else if (arrayClass == short[].class) {
-            return ((short[]) originalArray).clone();
-        } else if (arrayClass == boolean[].class) {
-            return ((boolean[]) originalArray).clone();
-        } else {
-            return ((Object[]) originalArray).clone();
-        }
-    }
-
     private int hashCode0() {
         int hash = 0;
-        for (Map.Entry<String, Object> stringObjectEntry : this.memberValues.entrySet()) {
-            hash += 127 * stringObjectEntry.getKey().hashCode() ^ memberValueHashCode(stringObjectEntry.getValue());
+        for (Map.Entry<String, TypeValue> stringObjectEntry : this.memberValues.entrySet()) {
+            hash += 127 * stringObjectEntry.getKey().hashCode() ^ memberValueHashCode(stringObjectEntry.getValue().value);
         }
         return hash;
     }
@@ -411,6 +410,16 @@ public class AnnotationInvocationHandler implements InvocationHandler, Serializa
             return Arrays.hashCode((short[]) value);
         } else {
             return valueClass == boolean[].class ? Arrays.hashCode((boolean[]) value) : Arrays.hashCode((Object[]) value);
+        }
+    }
+
+    private static class TypeValue {
+        final Class<?> type;
+        final Object value;
+
+        private TypeValue(Class<?> type, Object value) {
+            this.type = type;
+            this.value = value;
         }
     }
 }

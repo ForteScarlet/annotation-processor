@@ -24,7 +24,7 @@ public class ConverterTest {
     @Test
     public void test1() {
         Converters converters = new HutoolConverters();
-        final Integer convert = converters.convert(int.class, "123");
+        final Integer convert = converters.convert("123", int.class);
         assert convert != null;
         assert 124 == convert + 1;
     }
@@ -36,7 +36,7 @@ public class ConverterTest {
         subUser.name = "forte";
         final Converters converters = Converters.nonConverters();
 
-        final User user = converters.convert(User.class, subUser);
+        final User user = converters.convert(subUser, User.class);
         assert user != null;
         assert user.name.equals(subUser.name);
         assert user == subUser;
@@ -74,7 +74,7 @@ class SubUser extends User {
 class HutoolConverters implements Converters {
 
     @Override
-    public <FROM, TO> TO convert(Class<FROM> from, @NotNull Class<TO> to, @NotNull FROM instance) {
+    public <FROM, TO> TO convert(Class<FROM> from, @NotNull FROM instance, @NotNull Class<TO> to) {
         return Convert.convert(to, instance);
     }
 }

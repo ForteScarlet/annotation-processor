@@ -14,7 +14,7 @@ import java.util.Set;
 public class AnnotationToolConfiguration {
     private Map<AnnotatedElement, Map<Class<? extends Annotation>, Annotation>> cacheMap;
     private Map<AnnotatedElement, Set<Class<? extends Annotation>>> nullCacheMap;
-    private boolean mixAllRepeatable;
+    private boolean mixAllRepeatable; // TODO?
     private Converters converters;
 
 
