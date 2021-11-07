@@ -1,7 +1,6 @@
 package love.forte;
 
 import cn.hutool.core.convert.Convert;
-import love.forte.annotationtool.core.AnnotationInvocationHandler;
 import love.forte.annotationtool.core.AnnotationTool;
 import love.forte.annotationtool.core.AnnotationTools;
 import love.forte.annotationtool.core.Converters;
@@ -9,8 +8,6 @@ import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 
 import java.lang.annotation.*;
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.Proxy;
 import java.util.Collections;
 import java.util.Map;
 

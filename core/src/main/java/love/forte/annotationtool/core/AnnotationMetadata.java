@@ -40,7 +40,7 @@ public interface AnnotationMetadata<A extends Annotation> {
      * @return
      * @throws ReflectiveOperationException ref exception.
      */
-    Object getAnnotationValue(@NotNull String properties, @NotNull A annotation) throws ReflectiveOperationException;
+    Object getAnnotationValue(@NotNull String properties, @NotNull Annotation annotation) throws ReflectiveOperationException;
 
 
     static <A extends Annotation> AnnotationMetadata<A> resolve(@NotNull Class<A> annotationType) {

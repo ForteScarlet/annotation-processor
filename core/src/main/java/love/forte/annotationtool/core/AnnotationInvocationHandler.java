@@ -1,12 +1,12 @@
 package love.forte.annotationtool.core;
 
 
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
 import java.lang.annotation.AnnotationFormatError;
-import java.lang.annotation.AnnotationTypeMismatchException;
 import java.lang.annotation.IncompleteAnnotationException;
 import java.lang.reflect.*;
 import java.security.AccessController;
@@ -21,13 +21,10 @@ import java.util.*;
 @SuppressWarnings("unused")
 public class AnnotationInvocationHandler implements InvocationHandler, Serializable {
     private static final long serialVersionUID = 1145141919810L;
-    private static final Set<String> OBJ_METHOD = new HashSet<>(Arrays.asList("toString", "hashCode", "annotationType"));
 
     private final AnnotationMetadata<?> metadata;
 
     private final Class<? extends Annotation> type;
-    // private final Map<String, Object> memberValues;
-    // private final Map<String, TypeValue> memberValues;
 
     private final Map<String, Object> memberValues;
 
@@ -44,15 +41,20 @@ public class AnnotationInvocationHandler implements InvocationHandler, Serializa
         return metadata.getPropertyTypes();
     }
 
+    AnnotationMetadata<?> getMetadata() {
+        return metadata;
+    }
+
     public Object get(String key) {
         return memberValues.get(key);
     }
 
 
-    <A extends Annotation> AnnotationInvocationHandler(
-            AnnotationMetadata<A> metadata,
+    //region Constructors
+    AnnotationInvocationHandler(
+            AnnotationMetadata<? extends Annotation> metadata,
             @Nullable Map<String, Object> memberValues,
-            @Nullable A baseAnnotation
+            @Nullable Annotation baseAnnotation
     ) {
         this.metadata = metadata;
 
@@ -62,44 +64,45 @@ public class AnnotationInvocationHandler implements InvocationHandler, Serializa
         this.memberValues = resolveMemberValues(memberValues, metadata, baseAnnotation);
     }
 
-    <A extends Annotation> AnnotationInvocationHandler(
-            AnnotationMetadata<A> metadata,
-            @Nullable A baseAnnotation
+    AnnotationInvocationHandler(
+            AnnotationMetadata<? extends Annotation> metadata,
+            @Nullable Annotation baseAnnotation
     ) {
         this(metadata, null, baseAnnotation);
     }
 
-    <A extends Annotation> AnnotationInvocationHandler(
-            AnnotationMetadata<A> metadata,
+    AnnotationInvocationHandler(
+            AnnotationMetadata<? extends Annotation> metadata,
             Map<String, Object> memberValues
     ) {
         this(metadata, memberValues, null);
     }
 
-    <A extends Annotation> AnnotationInvocationHandler(
-            Class<A> annotationType,
+    AnnotationInvocationHandler(
+            Class<? extends Annotation> annotationType,
             @Nullable Map<String, Object> memberValues,
-            @Nullable A baseAnnotation
+            @Nullable Annotation baseAnnotation
     ) {
         this(AnnotationMetadata.resolve(annotationType), memberValues, baseAnnotation);
     }
 
-    <A extends Annotation> AnnotationInvocationHandler(
-            Class<A> annotationType,
-            @Nullable A baseAnnotation
+    AnnotationInvocationHandler(
+            Class<? extends Annotation> annotationType,
+            @NotNull Annotation baseAnnotation
     ) {
         this(annotationType, null, baseAnnotation);
     }
 
-    <A extends Annotation> AnnotationInvocationHandler(
-            Class<A> annotationType,
+    AnnotationInvocationHandler(
+            Class<? extends Annotation> annotationType,
             Map<String, Object> memberValues
     ) {
         this(annotationType, memberValues, null);
     }
+    //endregion
 
 
-    private static <A extends Annotation> LinkedHashMap<String, Object> resolveMemberValues(@Nullable Map<String, Object> memberValues, AnnotationMetadata<A> metadata, @Nullable A instance) {
+    private static <A extends Annotation> LinkedHashMap<String, Object> resolveMemberValues(@Nullable Map<String, Object> memberValues, AnnotationMetadata<?> metadata, @Nullable Annotation instance) {
         if (memberValues == null) {
             memberValues = Collections.emptyMap();
         }
@@ -130,30 +133,19 @@ public class AnnotationInvocationHandler implements InvocationHandler, Serializa
         return newMemberValues;
     }
 
-    private static boolean nameFound(String name, Class<?>[] parameterTypes, Map<String, Object> memberValues, LinkedHashMap<String, TypeValue> newMemberValues) {
-        if (parameterTypes.length > 0) {
-            return true;
-        }
-        if (OBJ_METHOD.contains(name)) {
-            return true;
-        }
-
-        if (memberValues != null) {
-            final Object value = memberValues.get(name);
-            if (value != null) {
-                newMemberValues.put(name, new TypeValue(value.getClass(), value));
-            }
-        }
-
-        return false;
-    }
 
     /**
      * 一个注解的代理逻辑实例。
      */
     @Override
-    public Object invoke(Object proxy, Method method, Object[] args) throws InvocationTargetException, IllegalAccessException {
+    public Object invoke(Object proxy, Method method, Object[] args) throws ReflectiveOperationException {
         final String name = method.getName();
+
+        final Object memberValue = memberValues.get(name);
+        if (memberValue != null) {
+            return checkArray(memberValue);
+        }
+
         Class<?>[] parameterTypes = method.getParameterTypes();
         //noinspection AlibabaUndefineMagicConstant
         if ("equals".equals(name) && parameterTypes.length == 1 && parameterTypes[0].equals(Object.class)) {
@@ -170,29 +162,22 @@ public class AnnotationInvocationHandler implements InvocationHandler, Serializa
                 case "annotationType":
                     return this.type;
                 default:
-                    Object value = this.memberValues.get(name);
-                    if (value == null) {
-                        if (baseAnnotation != null) {
-                            return method.invoke(baseAnnotation);
-                        }
-
-                        final Object defaultValue = method.getDefaultValue();
-                        if (defaultValue != null) {
-                            return defaultValue;
-                        }
-
+                    if (baseAnnotation != null) {
+                        return checkArray(metadata.getAnnotationValue(name, baseAnnotation));
+                    } else {
                         throw new IncompleteAnnotationException(this.type, name);
                     }
-
-
-                    if (value.getClass().isArray() && Array.getLength(value) != 0) {
-                        value = ArrayUtil.cloneArray(value);
-                    }
-
-                    return value;
             }
 
         }
+    }
+
+    private Object checkArray(Object value) {
+        if (value.getClass().isArray() && Array.getLength(value) != 0) {
+            return ArrayUtil.cloneArray(value);
+        }
+
+        return value;
     }
 
     private boolean equalsImpl(Object other) {
@@ -333,9 +318,9 @@ public class AnnotationInvocationHandler implements InvocationHandler, Serializa
         builder.append('(');
         boolean first = true;
 
-        final Set<Map.Entry<String, TypeValue>> entries = this.memberValues.entrySet();
+        final Set<Map.Entry<String, Object>> entries = this.memberValues.entrySet();
 
-        for (Map.Entry<String, TypeValue> entry : entries) {
+        for (Map.Entry<String, Object> entry : entries) {
             if (first) {
                 first = false;
             } else {
@@ -344,7 +329,7 @@ public class AnnotationInvocationHandler implements InvocationHandler, Serializa
 
             builder.append(entry.getKey());
             builder.append('=');
-            builder.append(memberValueToString(entry.getValue().value));
+            builder.append(memberValueToString(entry.getValue()));
         }
 
         builder.append(')');
@@ -384,8 +369,8 @@ public class AnnotationInvocationHandler implements InvocationHandler, Serializa
 
     private int hashCode0() {
         int hash = 0;
-        for (Map.Entry<String, TypeValue> stringObjectEntry : this.memberValues.entrySet()) {
-            hash += 127 * stringObjectEntry.getKey().hashCode() ^ memberValueHashCode(stringObjectEntry.getValue().value);
+        for (Map.Entry<String, Object> stringObjectEntry : this.memberValues.entrySet()) {
+            hash += 127 * stringObjectEntry.getKey().hashCode() ^ memberValueHashCode(stringObjectEntry.getValue());
         }
         return hash;
     }
@@ -413,13 +398,4 @@ public class AnnotationInvocationHandler implements InvocationHandler, Serializa
         }
     }
 
-    private static class TypeValue {
-        final Class<?> type;
-        final Object value;
-
-        private TypeValue(Class<?> type, Object value) {
-            this.type = type;
-            this.value = value;
-        }
-    }
 }

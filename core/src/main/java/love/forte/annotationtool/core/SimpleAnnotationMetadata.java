@@ -115,7 +115,7 @@ final class SimpleAnnotationMetadata<A extends Annotation> implements Annotation
 
 
     @Override
-    public Object getAnnotationValue(@NotNull String properties, @NotNull A annotation) throws ReflectiveOperationException {
+    public Object getAnnotationValue(@NotNull String properties, @NotNull Annotation annotation) throws ReflectiveOperationException {
         final Object defaultValue = getPropertyDefaultValue(properties);
         final Method method = getMethod(properties);
         if (method == null) {
@@ -138,4 +138,13 @@ final class SimpleAnnotationMetadata<A extends Annotation> implements Annotation
         return null;
     }
 
+    @Override
+    public String toString() {
+        return "AnnotationMetadata(" +
+                "annotationType=" + annotationType.getName() +
+                ", properties=" + propertyTypes +
+                // ", propertyDefaults=" + propertyDefaults +
+                // ", methods=" + methods +
+                ')';
+    }
 }
