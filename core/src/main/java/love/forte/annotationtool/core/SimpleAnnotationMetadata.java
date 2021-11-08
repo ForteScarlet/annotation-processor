@@ -5,6 +5,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
+import java.lang.annotation.Repeatable;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -18,13 +19,29 @@ import java.util.*;
  */
 final class SimpleAnnotationMetadata<A extends Annotation> implements AnnotationMetadata<A>, Serializable {
 
+    private static final int REPEAT_ABLE_TYPE_NO = 0;
+    private static final int REPEAT_ABLE_TYPE_ROOT = 1;
+    private static final int REPEAT_ABLE_TYPE_CHILD = 2;
+
     private final Class<A> annotationType;
+    private transient final boolean repeatable;
+
+    @SuppressWarnings({"FieldCanBeLocal", "unused"})
+    private transient final int repeatableType;
     private transient final Map<String, Class<?>> propertyTypes;
     private transient final Map<String, Object> propertyDefaults;
     private transient final Map<String, Object> methods = new HashMap<>(4);
 
     public SimpleAnnotationMetadata(Class<A> annotationType) {
         this.annotationType = annotationType;
+        boolean rpa = false;
+        int rpat = REPEAT_ABLE_TYPE_NO;
+
+        if (annotationType.isAnnotationPresent(Repeatable.class)) {
+            rpat = REPEAT_ABLE_TYPE_ROOT;
+            rpa = true;
+        }
+
 
         final Method[] methods = annotationType.getMethods();
         propertyTypes = new LinkedHashMap<>(methods.length);
@@ -41,12 +58,31 @@ final class SimpleAnnotationMetadata<A extends Annotation> implements Annotation
                 continue;
             }
 
+            if (!rpa && "value".equals(name) && returnType.isArray()) {
+                // check repeatable
+                final Class<?> componentType = returnType.getComponentType();
+                if (componentType.isAnnotation()) {
+                    final Repeatable repeatableAnnotation = componentType.getAnnotation(Repeatable.class);
+                    if (repeatableAnnotation != null && repeatableAnnotation.value().equals(annotationType)) {
+
+                        rpa = true;
+                    }
+                }
+
+            }
+
+
+
+
             propertyTypes.put(name, returnType);
             final Object defaultValue = method.getDefaultValue();
             if (defaultValue != null) {
                 propertyDefaults.put(name, defaultValue);
             }
         }
+
+        repeatable = rpa;
+        repeatableType = rpat;
     }
 
     @Nullable
@@ -73,6 +109,11 @@ final class SimpleAnnotationMetadata<A extends Annotation> implements Annotation
     }
 
     @Override
+    public boolean isRepeatable() {
+        return repeatable;
+    }
+
+    @Override
     public Class<A> getAnnotationType() {
         return annotationType;
     }
@@ -83,7 +124,9 @@ final class SimpleAnnotationMetadata<A extends Annotation> implements Annotation
     }
 
     @Override
-    public boolean containsProperty(String name) {
+    public boolean containsProperty(@NotNull String name) {
+        Objects.requireNonNull(name, "name should not be null");
+
         return propertyTypes.containsKey(name);
     }
 
@@ -94,8 +137,10 @@ final class SimpleAnnotationMetadata<A extends Annotation> implements Annotation
 
 
     @Override
-    public @Nullable Class<?> getPropertyType(String name) {
-        return propertyTypes.get(name);
+    public @Nullable Class<?> getPropertyType(@NotNull String property) {
+        Objects.requireNonNull(property, "name should not be null");
+
+        return propertyTypes.get(property);
     }
 
     @Override
@@ -104,8 +149,10 @@ final class SimpleAnnotationMetadata<A extends Annotation> implements Annotation
     }
 
     @Override
-    public @Nullable Object getPropertyDefaultValue(String name) {
-        final Object def = propertyDefaults.get(name);
+    public @Nullable Object getPropertyDefaultValue(@NotNull String property) {
+        Objects.requireNonNull(property, "name should not be null");
+
+        final Object def = propertyDefaults.get(property);
         if (def != null && def.getClass().isArray()) {
             return ArrayUtil.cloneArray(def);
         }
@@ -115,9 +162,12 @@ final class SimpleAnnotationMetadata<A extends Annotation> implements Annotation
 
 
     @Override
-    public Object getAnnotationValue(@NotNull String properties, @NotNull Annotation annotation) throws ReflectiveOperationException {
-        final Object defaultValue = getPropertyDefaultValue(properties);
-        final Method method = getMethod(properties);
+    public Object getAnnotationValue(@NotNull String property, @NotNull Annotation annotation) throws ReflectiveOperationException {
+        Objects.requireNonNull(property, "properties should not be null");
+        Objects.requireNonNull(annotation, "annotation should not be null");
+
+        final Object defaultValue = getPropertyDefaultValue(property);
+        final Method method = getMethod(property);
         if (method == null) {
             return defaultValue; // Basically, here is null.
         }
@@ -126,7 +176,9 @@ final class SimpleAnnotationMetadata<A extends Annotation> implements Annotation
     }
 
     @Override
-    public Map<String, Object> getProperties(A annotation) {
+    public Map<String, Object> getProperties(@NotNull A annotation) {
+        Objects.requireNonNull(annotation, "annotation should not be null");
+
         if (Proxy.isProxyClass(annotation.getClass())) {
             final InvocationHandler invocationHandler = Proxy.getInvocationHandler(annotation);
             if (invocationHandler instanceof AnnotationInvocationHandler) {

@@ -549,7 +549,7 @@ class SimpleAnnotationTool implements AnnotationTool {
 
     /**
      * @param sourceAnnotation source annotation.
-     * @param targetSubType       the repeatable subtype
+     * @param targetSubType    the repeatable subtype
      * @return is if can
      */
     private <F extends Annotation, T extends Annotation> boolean checkRepeatableMappable(F sourceAnnotation, Class<T> targetSubType) {
@@ -610,16 +610,13 @@ class SimpleAnnotationTool implements AnnotationTool {
 
                     final String valueKey = property.value();
                     putIfPropertyContains(valueKey, sourceValue, targetPropertyTypes, targetValues);
-                } else {
-                    // no mapping.
 
-                    putIfPropertyContains(propertyName, sourceValue, targetPropertyTypes, targetValues);
+                    continue;
                 }
-
-            } else {
-                // mappings was null
-                putIfPropertyContains(propertyName, sourceValue, targetPropertyTypes, targetValues);
             }
+
+            // mappings was null
+            putIfPropertyContains(propertyName, sourceValue, targetPropertyTypes, targetValues);
         }
 
         return proxy(targetType, targetType.getClassLoader(), null, targetValues);
@@ -653,11 +650,10 @@ class SimpleAnnotationTool implements AnnotationTool {
 
 
     /**
-     * 将被继承的 to 转化到
-     *
+     * 将一个注解实例转化为目标注解实例。
      */
-    private <F extends Annotation, T extends Annotation> T mapping(F from, T to) {
-        final Class<? extends Annotation> fromAnnotationType = from.annotationType();
+    private <F extends Annotation, T extends Annotation> T mapping(F source, T target) {
+        final Class<? extends Annotation> fromAnnotationType = source.annotationType();
         final AnnotationMapper annotationMapper = getAnnotation(fromAnnotationType, AnnotationMapper.class);
         if (annotationMapper != null) {
             // find mapper
