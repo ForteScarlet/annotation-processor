@@ -332,6 +332,10 @@ public class AnnotationInvocationHandler implements InvocationHandler, Serializa
             builder.append(memberValueToString(entry.getValue()));
         }
 
+        if (baseAnnotation != null) {
+
+        }
+
         builder.append(')');
         return builder.toString();
     }

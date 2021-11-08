@@ -17,26 +17,52 @@ import java.util.Set;
 public interface AnnotationTool {
 
     /**
-     * Get annotation instance from an {@link AnnotatedElement}, like {@link Class}.
+     * Get annotation instance from {@link AnnotatedElement}. e.g. from {@link Class} or {@link java.lang.reflect.Method}.
      *
-     * @param exclude exclude annotation class name. will not be edited.
+     * @param fromElement        annotation fromElement instance.
+     * @param annotationType annotation type.
+     * @param excludes        excludes annotation class name. They will not be parsing.
+     * @return The annotation instance, or null.
      */
-    @Nullable <A extends Annotation> A getAnnotation(AnnotatedElement from, Class<A> annotationType, @NotNull Set<String> exclude);
+    @Nullable <A extends Annotation> A getAnnotation(AnnotatedElement fromElement, Class<A> annotationType, @NotNull Set<String> excludes);
 
 
-    
     /**
-     * Get annotation instance from an {@link AnnotatedElement}, like {@link Class}.
+     * Get annotation instance fromElement {@link AnnotatedElement}. e.g. fromElement {@link Class} or {@link java.lang.reflect.Method}.
+     *
      * @see #getAnnotation(AnnotatedElement, Class, Set)
      */
     @Nullable
-    default <A extends Annotation> A getAnnotation(AnnotatedElement from, Class<A> annotationType) {
-        return getAnnotation(from, annotationType, Collections.emptySet());
+    default <A extends Annotation> A getAnnotation(AnnotatedElement fromElement, Class<A> annotationType) {
+        return getAnnotation(fromElement, annotationType, Collections.emptySet());
+    }
+
+
+    /**
+     * Get a repeatable annotation instance from {@link AnnotatedElement}. e.g. from {@link Class} or {@link java.lang.reflect.Method}.
+     *
+     * @param element        annotation element instance.
+     * @param annotationType annotation type.
+     * @param excludes        excludes annotation class name. will not be checked.
+     * @return The annotation instance, or null.
+     */
+    @Nullable <A extends Annotation> A getRepeatableAnnotation(AnnotatedElement element, Class<A> annotationType, @NotNull Set<String> excludes);
+
+    /**
+     * Get a repeatable annotation instance from {@link AnnotatedElement}. e.g. from {@link Class} or {@link java.lang.reflect.Method}.
+     *
+     * @param element        annotation element instance.
+     * @param annotationType annotation type.
+     * @return The annotation instance, or null.
+     */
+    default @Nullable <A extends Annotation> A getRepeatableAnnotation(AnnotatedElement element, Class<A> annotationType) {
+        return getRepeatableAnnotation(element, annotationType, Collections.emptySet());
     }
 
 
     /**
      * Get annotation values.
+     *
      * @param annotation An annotation instance.
      * @return a mutable map.
      */
@@ -45,6 +71,7 @@ public interface AnnotationTool {
 
     /**
      * Get annotation property names.
+     *
      * @param annotation An annotation instance.
      * @return a mutable set.
      */
@@ -54,6 +81,7 @@ public interface AnnotationTool {
 
     /**
      * Get annotation type's value types.
+     *
      * @param annotationType An annotation instance type.
      * @return a mutable map.
      */
@@ -63,20 +91,21 @@ public interface AnnotationTool {
 
     /**
      * Create an annotation proxy instance.
+     *
      * @param annotationType annotation type.
-     * @param classLoader classLoader.
-     * @param properties annotation's properties.
-     * @param base base annotation.
+     * @param classLoader    classLoader.
+     * @param properties     annotation's properties.
+     * @param base           base annotation.
      * @return annotation proxy instance.
      */
-    @NotNull
-    <A extends Annotation> A createAnnotationInstance(@NotNull Class<A> annotationType, @NotNull ClassLoader classLoader, @Nullable Map<String, Object> properties, @Nullable A base);
+    @NotNull <A extends Annotation> A createAnnotationInstance(@NotNull Class<A> annotationType, @NotNull ClassLoader classLoader, @Nullable Map<String, Object> properties, @Nullable A base);
 
     /**
      * Create an annotation proxy instance.
+     *
      * @param annotationType annotation type.
-     * @param classLoader classLoader.
-     * @param properties annotation's properties.
+     * @param classLoader    classLoader.
+     * @param properties     annotation's properties.
      * @return annotation proxy instance.
      */
     @NotNull
@@ -84,13 +113,13 @@ public interface AnnotationTool {
         return createAnnotationInstance(annotationType, classLoader, properties, null);
     }
 
-    
+
     /**
      * Create an annotation proxy instance.
+     *
      * @param annotationType annotation type.
-     * @param properties annotation's properties.
+     * @param properties     annotation's properties.
      * @return annotation proxy instance.
-     * 
      * @see #createAnnotationInstance(Class, ClassLoader, Map)
      */
     @NotNull
@@ -100,9 +129,9 @@ public interface AnnotationTool {
 
     /**
      * Create an annotation proxy instance.
+     *
      * @param annotationType annotation type.
      * @return annotation proxy instance.
-     *
      * @see #createAnnotationInstance(Class, ClassLoader, Map)
      */
     @NotNull
@@ -111,9 +140,8 @@ public interface AnnotationTool {
     }
 
 
-
     /**
-     * Clean internal annotation instance cache.
+     * Clean internal annotation instance cache. (if exists.)
      */
     void clearCache();
 

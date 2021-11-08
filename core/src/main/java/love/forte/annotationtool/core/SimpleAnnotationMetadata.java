@@ -106,7 +106,7 @@ final class SimpleAnnotationMetadata<A extends Annotation> implements Annotation
     @Override
     public @Nullable Object getPropertyDefaultValue(String name) {
         final Object def = propertyDefaults.get(name);
-        if (def.getClass().isArray()) {
+        if (def != null && def.getClass().isArray()) {
             return ArrayUtil.cloneArray(def);
         }
 

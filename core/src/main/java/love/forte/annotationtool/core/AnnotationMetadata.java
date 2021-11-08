@@ -4,12 +4,13 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.annotation.Annotation;
-import java.lang.annotation.AnnotationTypeMismatchException;
 import java.util.Map;
 import java.util.Set;
 
 /**
  * Some Annotation metadata.
+ *
+ * TODO 补充注释
  *
  * @author ForteScarlet
  */

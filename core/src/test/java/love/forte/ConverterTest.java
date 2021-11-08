@@ -26,18 +26,6 @@ public class ConverterTest {
         assert 124 == convert + 1;
     }
 
-    @Test
-    public void test2() {
-        SubUser subUser = new SubUser();
-        subUser.age = 18;
-        subUser.name = "forte";
-        final Converters converters = Converters.nonConverters();
-
-        final User user = converters.convert(subUser, User.class);
-        assert user != null;
-        assert user.name.equals(subUser.name);
-        assert user == subUser;
-    }
 
     @Test
     public void test3() {
@@ -57,15 +45,6 @@ public class ConverterTest {
 
 
 }
-
-class User {
-    String name;
-}
-
-class SubUser extends User {
-    int age;
-}
-
 
 
 class HutoolConverters implements Converters {

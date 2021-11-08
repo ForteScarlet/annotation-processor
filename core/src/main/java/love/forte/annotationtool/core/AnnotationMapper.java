@@ -1,22 +1,50 @@
 package love.forte.annotationtool.core;
 
-import java.lang.annotation.Annotation;
+import java.lang.annotation.*;
 
 /**
- * Annotation properties mapper.
- * <p>
- * annotation type of {@link FROM 'from'} -> An annotation properties for type {@link TO 'to'} by {@link AnnotationMapper#map(Annotation)} -> Annotation type of {@link TO 'to'}.
+ * Annotated on annotation type.
+ * Just like... An annotation extends other annotation?
  *
  * @author ForteScarlet
  */
-public interface AnnotationMapper<FROM extends Annotation, TO extends Annotation> {
+@Target(ElementType.ANNOTATION_TYPE)
+@Retention(RetentionPolicy.RUNTIME)
+public @interface AnnotationMapper {
+    Class<? extends Annotation>[] value();
+
+
 
     /**
-     * get mapped annotation properties.
-     *
-     * @param annotation from annotation
-     * @return mapped annotation instance.
+     * Annotation's property's mapper.
+     * Should use on annotation's property method.
      */
-    TO map(FROM annotation);
+    @Documented
+    @Target(ElementType.METHOD)
+    @Retention(RetentionPolicy.RUNTIME)
+    @Repeatable(Properties.class)
+    @interface Property {
+
+        /**
+         * Target annotation type.
+         * <p>
+         * if {@link AnnotationMapper#value()}'s length <= 1, this can be ignored.
+         */
+        Class<? extends Annotation> target() default Annotation.class;
+
+        /**
+         * Target annotation's property name.
+         */
+        String value();
+    }
+
+
+
+    @Documented
+    @Target(ElementType.METHOD)
+    @Retention(RetentionPolicy.RUNTIME)
+    @interface Properties {
+        Property[] value();
+    }
 
 }
