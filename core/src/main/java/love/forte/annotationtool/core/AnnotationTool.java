@@ -10,8 +10,21 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Annotation tool.
+ * Annotation tool interface.
+ * <p>
+ * The Annotation tool interface provides some abstract methods to define some operations for annotations,
+ * such as {@link #getAnnotation(AnnotatedElement, Class, Set) getting an annotation instance},
+ * {@link #getProperties(Annotation) getting the properties of an annotation}
+ * or {@link #createAnnotationInstance(Class, ClassLoader, Map, Annotation) directly constructing an annotation instance}, etc.
+ * <p>
+ * You can implement this interface any way you like,
+ * but of course, the library provides a default implementation, as well as an implementation of the instance provided by {@link AnnotationTools#getAnnotationTool()}: {@link SimpleAnnotationTool}.
+ * <p>
+ * Note that all return values in the interface are considered immutable when they are of type {@link java.util.Collection} or {@link Map}.
+ * Because they are indeed immutable when they are empty or have only one element. e.g. {@link Collections#emptyMap()} and {@link Collections#emptySet()}.
  *
+ * @see SimpleAnnotationTool
+ * @see AnnotationTools
  * @author ForteScarlet
  */
 public interface AnnotationTool {
@@ -19,9 +32,9 @@ public interface AnnotationTool {
     /**
      * Get annotation instance from {@link AnnotatedElement}. e.g. from {@link Class} or {@link java.lang.reflect.Method}.
      *
-     * @param fromElement        annotation fromElement instance.
+     * @param fromElement    annotation fromElement instance.
      * @param annotationType annotation type.
-     * @param excludes        excludes annotation class name. They will not be parsing.
+     * @param excludes       excludes annotation class name. They will not be parsing.
      * @return The annotation instance, or null.
      */
     @Nullable <A extends Annotation> A getAnnotation(AnnotatedElement fromElement, Class<A> annotationType, @NotNull Set<String> excludes);
@@ -43,7 +56,7 @@ public interface AnnotationTool {
      *
      * @param element        annotation element instance.
      * @param annotationType annotation type.
-     * @param excludes        excludes annotation class name. will not be checked.
+     * @param excludes       excludes annotation class name. will not be checked.
      * @return The annotation instance, or null.
      */
     @Nullable <A extends Annotation> A getRepeatableAnnotation(AnnotatedElement element, Class<A> annotationType, @NotNull Set<String> excludes);
@@ -64,7 +77,7 @@ public interface AnnotationTool {
      * Get annotation values.
      *
      * @param annotation An annotation instance.
-     * @return a mutable map.
+     * @return annotation property values. Treat it as <b>immutable</b> plz.
      */
     @NotNull
     Map<String, Object> getAnnotationValues(@NotNull Annotation annotation);
@@ -73,20 +86,20 @@ public interface AnnotationTool {
      * Get annotation property names.
      *
      * @param annotation An annotation instance.
-     * @return a mutable set.
+     * @return property name set. Treat it as <b>immutable</b> plz.
      */
     @NotNull
-    Set<String> getPropertyNames(@NotNull Annotation annotation);
+    Set<String> getProperties(@NotNull Annotation annotation);
 
 
     /**
      * Get annotation type's value types.
      *
      * @param annotationType An annotation instance type.
-     * @return a mutable map.
+     * @return name-type map. Treat it as <b>immutable</b> plz.
      */
     @NotNull
-    Map<String, Class<?>> getAnnotationValueTypes(@NotNull Class<? extends Annotation> annotationType);
+    Map<String, Class<?>> getAnnotationPropertyTypes(@NotNull Class<? extends Annotation> annotationType);
 
 
     /**

@@ -12,9 +12,13 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * Simple implementation of {@link AnnotationTool}.
+ * This is the default implementation of the library for the {@link AnnotationTool} and is based on the {@link Proxy JDK Proxy} which implements the functionality required by the {@link AnnotationTool}.
  * <p>
- * {@link SimpleAnnotationTool} is thread unsafe.
+ * This implementation internally caches the final {@link Annotation} instance by default (except for the result of {@link #createAnnotationInstance(Class, ClassLoader, Map, Annotation) createAnnotationInstance(...) } ). In {@link AnnotationTools}, two {@link LinkedHashMap} are used as caches by default.
+ * You can change this default by providing another Map, for example using {@link HashMap}.
+ *
+ * <p>
+ * {@link SimpleAnnotationTool} is <b>not thread-safe</b>.
  *
  * @author ForteScarlet
  */
@@ -462,7 +466,7 @@ class SimpleAnnotationTool implements AnnotationTool {
 
 
     @Override
-    public @NotNull Map<String, Class<?>> getAnnotationValueTypes(@NotNull Class<? extends Annotation> annotationType) {
+    public @NotNull Map<String, Class<?>> getAnnotationPropertyTypes(@NotNull Class<? extends Annotation> annotationType) {
         final LinkedHashMap<String, Class<?>> newMemberValues = new LinkedHashMap<>();
         final Method[] methods = annotationType.getMethods();
 
@@ -488,7 +492,7 @@ class SimpleAnnotationTool implements AnnotationTool {
 
 
     @Override
-    public @NotNull Set<String> getPropertyNames(@NotNull Annotation annotation) {
+    public @NotNull Set<String> getProperties(@NotNull Annotation annotation) {
         return getAnnotationValues(annotation).keySet();
     }
 
@@ -650,30 +654,75 @@ class SimpleAnnotationTool implements AnnotationTool {
 
 
     /**
-     * 将一个注解实例转化为目标注解实例。
+     * Map <tt>source</tt> to <tt>target</tt>.
+     * 其中，<tt>target</tt> 注解实例是从 <tt>source</tt> 注解实例上获取到的。
+     * 因此，在提供 <tt>target</tt> 的基础上，通过 <tt>source</tt> 对 <tt>target</tt> 进行映射。
      */
+    @SuppressWarnings("unchecked")
     private <F extends Annotation, T extends Annotation> T mapping(F source, T target) {
         final Class<? extends Annotation> fromAnnotationType = source.annotationType();
-        final AnnotationMapper annotationMapper = getAnnotation(fromAnnotationType, AnnotationMapper.class);
-        if (annotationMapper != null) {
-            // find mapper
-            final Class<? extends Annotation>[] mappings = annotationMapper.value();
-            for (Class<? extends Annotation> type : mappings) {
-                if (type.equals(fromAnnotationType)) {
+        Map<String, String> mapper = findPropertyMapper(fromAnnotationType, target.annotationType());
+        final Map<String, Object> sourceValues = getAnnotationValues(source);
 
-                    break;
-                }
-            }
+        final AnnotationMetadata<T> targetMetadata = (AnnotationMetadata<T>) AnnotationMetadata.resolve(target.annotationType());
+
+        final Set<String> propertyNames = targetMetadata.getPropertyNames();
 
 
-        } else {
-
-
-        }
+        // final AnnotationMapper annotationMapper = getAnnotation(fromAnnotationType, AnnotationMapper.class);
+        // if (annotationMapper != null) {
+        //     // find mapper
+        //     final Class<? extends Annotation>[] mappings = annotationMapper.value();
+        //     for (Class<? extends Annotation> type : mappings) {
+        //         if (type.equals(fromAnnotationType)) {
+        //
+        //             break;
+        //         }
+        //     }
+        //
+        //
+        // } else {
+        //
+        //
+        // }
 
         // todo
         return null;
     }
+
+
+    /**
+     * 尝试得到一个注解上的 {@link AnnotationMapper} 注解。
+     */
+    private AnnotationMapper getMapper(Class<? extends Annotation> annotationType) {
+        return getAnnotation(annotationType, AnnotationMapper.class);
+    }
+
+
+    /**
+     * Find {@link AnnotationMapper.Properties} for <tt>targetType</tt>.
+     *
+     * @param annotationType type
+     * @param targetType     target
+     * @return property map, or empty map.
+     */
+    private Map<String, String> findPropertyMapper(Class<? extends Annotation> annotationType, Class<? extends Annotation> targetType) {
+        final AnnotationMapper mapper = getMapper(annotationType);
+        if (mapper == null) {
+            return Collections.emptyMap();
+        }
+        final Class<? extends Annotation>[] values = mapper.value();
+        if (Arrays.stream(values).noneMatch(targetType::equals)) {
+            return Collections.emptyMap();
+        }
+
+        Map<String, String> properties = new LinkedHashMap<>(8);
+        // annotationType.getMethods()
+
+
+        return Collections.emptyMap();
+    }
+
 
     @Override
     public void clearCache() {

@@ -191,6 +191,13 @@ final class SimpleAnnotationMetadata<A extends Annotation> implements Annotation
     }
 
     @Override
+    public Map<String, String> getPropertiesNamingMap(Class<? extends Annotation> targetAnnotationType) {
+
+        // TODO
+        return null;
+    }
+
+    @Override
     public String toString() {
         return "AnnotationMetadata(" +
                 "annotationType=" + annotationType.getName() +
