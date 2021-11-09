@@ -1,0 +1,1 @@
+package love.forte.annotationtool.core;
