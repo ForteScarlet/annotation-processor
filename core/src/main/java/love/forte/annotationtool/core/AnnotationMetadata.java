@@ -15,6 +15,11 @@ import java.util.WeakHashMap;
  */
 @SuppressWarnings("unused")
 public interface AnnotationMetadata<A extends Annotation> {
+    /**
+     *
+     * TODO 补充注释。
+     *
+     */
     AnnotationMetadataFactory FACTORY = new SimpleCacheableAnnotationMetadataFactory();
 
     /**
