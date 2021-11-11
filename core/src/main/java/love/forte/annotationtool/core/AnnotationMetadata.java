@@ -2,6 +2,7 @@ package love.forte.annotationtool.core;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.Unmodifiable;
 
 import java.lang.annotation.Annotation;
 import java.util.Map;
@@ -40,8 +41,9 @@ public interface AnnotationMetadata<A extends Annotation> {
     /**
      * Get current annotation type 's all property name.
      *
-     * @return property names. Treat it as <b>immutable</b> plz.
+     * @return property names.
      */
+    @Unmodifiable
     Set<String> getPropertyNames();
 
     /**
@@ -57,6 +59,7 @@ public interface AnnotationMetadata<A extends Annotation> {
      *
      * @return properties with their type
      */
+    @Unmodifiable
     Map<String, Class<?>> getPropertyTypes();
 
     /**
@@ -71,8 +74,9 @@ public interface AnnotationMetadata<A extends Annotation> {
     /**
      * Get all properties with their default value (if it exists).
      *
-     * @return properties with their default value. Treat it as <b>immutable</b> plz.
+     * @return properties with their default value.
      */
+    @Unmodifiable
     Map<String, Object> getPropertyDefaultValues();
 
     /**
@@ -88,8 +92,9 @@ public interface AnnotationMetadata<A extends Annotation> {
      * Get properties of specified annotation instance.
      *
      * @param annotation annotation instance.
-     * @return properties. Treat it as <b>immutable</b> plz.
+     * @return properties.
      */
+    @Unmodifiable
     Map<String, Object> getProperties(@NotNull A annotation);
 
     /**
@@ -108,8 +113,9 @@ public interface AnnotationMetadata<A extends Annotation> {
      * Get properties naming map for target annotation type.
      *
      * @param targetAnnotationType target type
-     * @return properties naming map, or <b>Immutable</b> empty map.
+     * @return properties naming map, or empty.
      */
+    @Unmodifiable
     Map<String, String> getPropertiesNamingMap(Class<? extends Annotation> targetAnnotationType);
 
 

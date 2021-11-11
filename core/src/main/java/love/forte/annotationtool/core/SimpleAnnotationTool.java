@@ -148,7 +148,8 @@ class SimpleAnnotationTool implements AnnotationTool {
         A repeatableAnnotation = getAnnotation(element, parentType, excludes);
 
 
-        @SuppressWarnings("unchecked") final List<Annotation> allAnnotations = getAllRepeatableSubtypeAnnotations(element, parentType, (Class<Annotation>) subtype, resolveExclude(excludes), new ArrayList<>(8));
+        @SuppressWarnings("unchecked")
+        final List<Annotation> allAnnotations = getAllRepeatableSubtypeAnnotations(element, parentType, (Class<Annotation>) subtype, resolveExclude(excludes), new ArrayList<>(8));
 
         final Map<String, Object> newValueMap;
 
@@ -739,7 +740,7 @@ class SimpleAnnotationTool implements AnnotationTool {
         return Collections.emptyMap();
     }
 
-    private static Object toArray(Class<?> type, List<?> list) {
+    private static Object toArray(Class<?> type, @NotNull List<?> list) {
         final Object array = Array.newInstance(type, list.size());
         for (int i = 0; i < list.size(); i++) {
             Array.set(array, i, list.get(i));

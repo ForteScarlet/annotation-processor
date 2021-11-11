@@ -19,28 +19,18 @@ import java.util.*;
  */
 final class SimpleAnnotationMetadata<A extends Annotation> implements AnnotationMetadata<A>, Serializable {
 
-    private static final int REPEAT_ABLE_TYPE_NO = 0;
-    private static final int REPEAT_ABLE_TYPE_ROOT = 1;
-    private static final int REPEAT_ABLE_TYPE_CHILD = 2;
-
     private final Class<A> annotationType;
     private transient final boolean repeatable;
 
     @SuppressWarnings({"FieldCanBeLocal", "unused"})
-    private transient final int repeatableType;
     private transient final Map<String, Class<?>> propertyTypes;
     private transient final Map<String, Object> propertyDefaults;
     private transient final Map<String, Object> methods = new HashMap<>(4);
 
     public SimpleAnnotationMetadata(Class<A> annotationType) {
         this.annotationType = annotationType;
-        boolean rpa = false;
-        int rpat = REPEAT_ABLE_TYPE_NO;
-
-        if (annotationType.isAnnotationPresent(Repeatable.class)) {
-            rpat = REPEAT_ABLE_TYPE_ROOT;
-            rpa = true;
-        }
+        boolean rpa = annotationType.isAnnotationPresent(Repeatable.class);
+        // int rpat = REPEAT_ABLE_TYPE_NO;
 
 
         final Method[] methods = annotationType.getMethods();
@@ -64,14 +54,11 @@ final class SimpleAnnotationMetadata<A extends Annotation> implements Annotation
                 if (componentType.isAnnotation()) {
                     final Repeatable repeatableAnnotation = componentType.getAnnotation(Repeatable.class);
                     if (repeatableAnnotation != null && repeatableAnnotation.value().equals(annotationType)) {
-
                         rpa = true;
                     }
                 }
 
             }
-
-
 
 
             propertyTypes.put(name, returnType);
@@ -82,7 +69,6 @@ final class SimpleAnnotationMetadata<A extends Annotation> implements Annotation
         }
 
         repeatable = rpa;
-        repeatableType = rpat;
     }
 
     @Nullable
