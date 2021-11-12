@@ -28,7 +28,7 @@ public class ConverterTest {
 
 
     @Test
-    public void test3() {
+    public void test3() throws ReflectiveOperationException {
         final AnnotationTool annotationTool = AnnotationTools.getAnnotationTool();
         final Map<String, Object> pm = Collections.singletonMap("age", 1);
         final MyAnnotation annotationInstance = annotationTool.createAnnotationInstance(MyAnnotation.class, pm);

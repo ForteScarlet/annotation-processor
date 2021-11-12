@@ -2,10 +2,12 @@ package love.forte.annotationtool.core;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.Unmodifiable;
 
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
 import java.lang.annotation.Repeatable;
+import java.lang.ref.WeakReference;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -19,23 +21,27 @@ import java.util.*;
  */
 final class SimpleAnnotationMetadata<A extends Annotation> implements AnnotationMetadata<A>, Serializable {
 
-    private final Class<A> annotationType;
+    private WeakReference<Class<A>> annotationType;
+    private final String annotationTypeName;
     private transient final boolean repeatable;
+    private transient final Class<?> repeatableAnnotationType;
 
     @SuppressWarnings({"FieldCanBeLocal", "unused"})
     private transient final Map<String, Class<?>> propertyTypes;
     private transient final Map<String, Object> propertyDefaults;
-    private transient final Map<String, Object> methods = new HashMap<>(4);
+    private transient final Map<String, Method> methods = new HashMap<>(4);
 
     public SimpleAnnotationMetadata(Class<A> annotationType) {
-        this.annotationType = annotationType;
+        this.annotationType = new WeakReference<>(annotationType);
+        this.annotationTypeName = annotationType.getName();
         boolean rpa = annotationType.isAnnotationPresent(Repeatable.class);
-        // int rpat = REPEAT_ABLE_TYPE_NO;
 
 
         final Method[] methods = annotationType.getMethods();
         propertyTypes = new LinkedHashMap<>(methods.length);
         propertyDefaults = new LinkedHashMap<>();
+
+        Class<?> repeatableChildType = null;
 
         for (Method method : methods) {
             final String name = method.getName();
@@ -48,12 +54,14 @@ final class SimpleAnnotationMetadata<A extends Annotation> implements Annotation
                 continue;
             }
 
+
             if (!rpa && "value".equals(name) && returnType.isArray()) {
                 // check repeatable
                 final Class<?> componentType = returnType.getComponentType();
                 if (componentType.isAnnotation()) {
                     final Repeatable repeatableAnnotation = componentType.getAnnotation(Repeatable.class);
                     if (repeatableAnnotation != null && repeatableAnnotation.value().equals(annotationType)) {
+                        repeatableChildType = componentType;
                         rpa = true;
                     }
                 }
@@ -68,27 +76,23 @@ final class SimpleAnnotationMetadata<A extends Annotation> implements Annotation
             }
         }
 
+        this.repeatableAnnotationType = repeatableChildType;
         repeatable = rpa;
     }
 
     @Nullable
     private Method getMethod(String name) {
-        final Object method = methods.get(name);
+        final Method method = methods.get(name);
         if (method != null) {
-            if (method instanceof Method) {
-                return (Method) method;
-            } else {
-                return null;
-            }
+            return method;
         }
 
         try {
-            final Method gotMethod = annotationType.getMethod(name);
+            final Method gotMethod = getAnnotationType().getMethod(name);
             gotMethod.setAccessible(true);
             methods.put(name, gotMethod);
             return gotMethod;
         } catch (NoSuchMethodException e) {
-            methods.put(name, 0);
             return null;
         }
 
@@ -100,8 +104,21 @@ final class SimpleAnnotationMetadata<A extends Annotation> implements Annotation
     }
 
     @Override
+    public @Nullable Class<?> getRepeatableAnnotationType() {
+        return repeatableAnnotationType;
+    }
+
+    @Override
     public Class<A> getAnnotationType() {
-        return annotationType;
+        if (annotationType == null) {
+            throw new IllegalStateException(new ClassNotFoundException("annotation type class(" + annotationTypeName + ") has been recycled."));
+        }
+        final Class<A> got = annotationType.get();
+        if (got == null) {
+            annotationType = null;
+            throw new IllegalStateException(new ClassNotFoundException("annotation type class(" + annotationTypeName + ") has been recycled."));
+        }
+        return got;
     }
 
     @Override
@@ -148,9 +165,14 @@ final class SimpleAnnotationMetadata<A extends Annotation> implements Annotation
 
 
     @Override
-    public Object getAnnotationValue(@NotNull String property, @NotNull Annotation annotation) throws ReflectiveOperationException {
+    public Object getAnnotationValue(@NotNull String property, @NotNull Annotation annotation) throws InvocationTargetException, IllegalAccessException {
         Objects.requireNonNull(property, "properties should not be null");
         Objects.requireNonNull(annotation, "annotation should not be null");
+
+        final InvocationHandler handler = Proxy.getInvocationHandler(annotation);
+        if (handler instanceof AnnotationInvocationHandler) {
+            return ((AnnotationInvocationHandler) handler).get(property);
+        }
 
         final Object defaultValue = getPropertyDefaultValue(property);
         final Method method = getMethod(property);
@@ -172,13 +194,19 @@ final class SimpleAnnotationMetadata<A extends Annotation> implements Annotation
             }
         }
 
+
         // TODO
         return null;
     }
 
     @Override
-    public Map<String, String> getPropertiesNamingMap(Class<? extends Annotation> targetAnnotationType) {
+    public @Unmodifiable Map<String, String> getPropertyNamingMaps(Class<? extends Annotation> targetType) {
+        // TODO
+        return Collections.emptyMap();
+    }
 
+    @Override
+    public @Nullable String getPropertyNamingMap(Class<? extends Annotation> targetType, String propertyName) {
         // TODO
         return null;
     }
@@ -186,7 +214,7 @@ final class SimpleAnnotationMetadata<A extends Annotation> implements Annotation
     @Override
     public String toString() {
         return "AnnotationMetadata(" +
-                "annotationType=" + annotationType.getName() +
+                "annotationType=" + annotationTypeName +
                 ", properties=" + propertyTypes +
                 // ", propertyDefaults=" + propertyDefaults +
                 // ", methods=" + methods +

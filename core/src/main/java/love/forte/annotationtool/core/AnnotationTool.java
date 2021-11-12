@@ -2,10 +2,12 @@ package love.forte.annotationtool.core;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.Unmodifiable;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedElement;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -23,10 +25,11 @@ import java.util.Set;
  * Note that all return values in the interface are considered immutable when they are of type {@link java.util.Collection} or {@link Map}.
  * Because they are indeed immutable when they are empty or have only one element. e.g. {@link Collections#emptyMap()} and {@link Collections#emptySet()}.
  *
+ * @author ForteScarlet
  * @see SimpleAnnotationTool
  * @see AnnotationTools
- * @author ForteScarlet
  */
+@SuppressWarnings("unused")
 public interface AnnotationTool {
 
     /**
@@ -37,7 +40,7 @@ public interface AnnotationTool {
      * @param excludes       excludes annotation class name. They will not be parsing.
      * @return The annotation instance, or null.
      */
-    @Nullable <A extends Annotation> A getAnnotation(AnnotatedElement fromElement, Class<A> annotationType, @NotNull Set<String> excludes);
+    @Nullable <A extends Annotation> A getAnnotation(AnnotatedElement fromElement, Class<A> annotationType, @Nullable Set<String> excludes) throws ReflectiveOperationException;
 
 
     /**
@@ -46,30 +49,31 @@ public interface AnnotationTool {
      * @see #getAnnotation(AnnotatedElement, Class, Set)
      */
     @Nullable
-    default <A extends Annotation> A getAnnotation(AnnotatedElement fromElement, Class<A> annotationType) {
+    default <A extends Annotation> A getAnnotation(AnnotatedElement fromElement, Class<A> annotationType) throws ReflectiveOperationException {
         return getAnnotation(fromElement, annotationType, Collections.emptySet());
     }
 
 
     /**
-     * Get a repeatable annotation instance from {@link AnnotatedElement}. e.g. from {@link Class} or {@link java.lang.reflect.Method}.
+     * Get annotation instance list from {@link AnnotatedElement}.
      *
-     * @param element        annotation element instance.
+     * @param element        annotation element instance. e.g. from {@link Class} or {@link java.lang.reflect.Method}.
      * @param annotationType annotation type.
      * @param excludes       excludes annotation class name. will not be checked.
-     * @return The annotation instance, or null.
+     * @return The annotation instance, or empty.
      */
-    @Nullable <A extends Annotation> A getRepeatableAnnotation(AnnotatedElement element, Class<A> annotationType, @NotNull Set<String> excludes);
+    @Unmodifiable <A extends Annotation> List<A> getAnnotations(AnnotatedElement element, Class<A> annotationType, @NotNull Set<String> excludes) throws ReflectiveOperationException;
 
     /**
      * Get a repeatable annotation instance from {@link AnnotatedElement}. e.g. from {@link Class} or {@link java.lang.reflect.Method}.
      *
      * @param element        annotation element instance.
      * @param annotationType annotation type.
-     * @return The annotation instance, or null.
+     * @return The annotation instance, or empty.
      */
-    default @Nullable <A extends Annotation> A getRepeatableAnnotation(AnnotatedElement element, Class<A> annotationType) {
-        return getRepeatableAnnotation(element, annotationType, Collections.emptySet());
+    @Unmodifiable
+    default <A extends Annotation> List<A> getAnnotations(AnnotatedElement element, Class<A> annotationType) throws ReflectiveOperationException {
+        return getAnnotations(element, annotationType, Collections.emptySet());
     }
 
 
@@ -80,7 +84,8 @@ public interface AnnotationTool {
      * @return annotation property values. Treat it as <b>immutable</b> plz.
      */
     @NotNull
-    Map<String, Object> getAnnotationValues(@NotNull Annotation annotation);
+    @Unmodifiable
+    Map<String, Object> getAnnotationValues(@NotNull Annotation annotation) throws ReflectiveOperationException;
 
     /**
      * Get annotation property names.
@@ -89,7 +94,8 @@ public interface AnnotationTool {
      * @return property name set. Treat it as <b>immutable</b> plz.
      */
     @NotNull
-    Set<String> getProperties(@NotNull Annotation annotation);
+    @Unmodifiable
+    Set<String> getProperties(@NotNull Annotation annotation) throws ReflectiveOperationException;
 
 
     /**
@@ -99,6 +105,7 @@ public interface AnnotationTool {
      * @return name-type map. Treat it as <b>immutable</b> plz.
      */
     @NotNull
+    @Unmodifiable
     Map<String, Class<?>> getAnnotationPropertyTypes(@NotNull Class<? extends Annotation> annotationType);
 
 
@@ -111,7 +118,7 @@ public interface AnnotationTool {
      * @param base           base annotation.
      * @return annotation proxy instance.
      */
-    @NotNull <A extends Annotation> A createAnnotationInstance(@NotNull Class<A> annotationType, @NotNull ClassLoader classLoader, @Nullable Map<String, Object> properties, @Nullable A base);
+    @NotNull <A extends Annotation> A createAnnotationInstance(@NotNull Class<A> annotationType, @NotNull ClassLoader classLoader, @Nullable Map<String, Object> properties, @Nullable A base) throws ReflectiveOperationException;
 
     /**
      * Create an annotation proxy instance.
@@ -122,7 +129,7 @@ public interface AnnotationTool {
      * @return annotation proxy instance.
      */
     @NotNull
-    default <A extends Annotation> A createAnnotationInstance(@NotNull Class<A> annotationType, @NotNull ClassLoader classLoader, @Nullable Map<String, Object> properties) {
+    default <A extends Annotation> A createAnnotationInstance(@NotNull Class<A> annotationType, @NotNull ClassLoader classLoader, @Nullable Map<String, Object> properties) throws ReflectiveOperationException {
         return createAnnotationInstance(annotationType, classLoader, properties, null);
     }
 
@@ -136,7 +143,7 @@ public interface AnnotationTool {
      * @see #createAnnotationInstance(Class, ClassLoader, Map)
      */
     @NotNull
-    default <A extends Annotation> A createAnnotationInstance(@NotNull Class<A> annotationType, @Nullable Map<String, Object> properties) {
+    default <A extends Annotation> A createAnnotationInstance(@NotNull Class<A> annotationType, @Nullable Map<String, Object> properties) throws ReflectiveOperationException {
         return createAnnotationInstance(annotationType, annotationType.getClassLoader(), properties);
     }
 
@@ -148,7 +155,7 @@ public interface AnnotationTool {
      * @see #createAnnotationInstance(Class, ClassLoader, Map)
      */
     @NotNull
-    default <A extends Annotation> A createAnnotationInstance(@NotNull Class<A> annotationType) {
+    default <A extends Annotation> A createAnnotationInstance(@NotNull Class<A> annotationType) throws ReflectiveOperationException {
         return createAnnotationInstance(annotationType, annotationType.getClassLoader(), null);
     }
 

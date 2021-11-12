@@ -17,9 +17,7 @@ import java.util.WeakHashMap;
 @SuppressWarnings("unused")
 public interface AnnotationMetadata<A extends Annotation> {
     /**
-     *
      * TODO 补充注释。
-     *
      */
     AnnotationMetadataFactory FACTORY = new SimpleCacheableAnnotationMetadataFactory();
 
@@ -32,10 +30,49 @@ public interface AnnotationMetadata<A extends Annotation> {
 
     /**
      * Is a repeatable annotation.
+     * <p>
+     * return true when:
+     * <ul>
+     *     <li>If this annotation contains {@link java.lang.annotation.Repeatable}</li>
+     *     <li>
+     *          If the current annotation has a <tt>value</tt> property of the {@link Annotation annotation array} type,
+     *          and there is a <tt>@Repeatable</tt> annotation on this annotation type,
+     *          and the value of its value is equal to the current annotation
+     *     </li>
+     * </ul>
+     * <p>
+     * e.g.:
+     * <pre>
+     * <code>
+     *
+     * <tt>@</tt>Target(ElementType.METHOD)
+     * <tt>@</tt>Retention(RetentionPolicy.RUNTIME)
+     * <tt>@</tt>@interface Elements {
+     *      Element[] value();
+     * }
+     *
+     * <tt>@</tt>Target(ElementType.METHOD)
+     * <tt>@</tt>Retention(RetentionPolicy.RUNTIME)
+     * <tt>@</tt>Repeatable(Elements.class)
+     * <tt>@</tt>interface Element {
+     *      // ...
+     * }
+     *
+     * </code>
+     * <pre/>
+     * Both <tt>Element</tt> and <tt>Elements</tt> will be considered repeatable.
      *
      * @return repeatable if true.
      */
     boolean isRepeatable();
+
+    /**
+     * if {@link #isRepeatable()} return true, this will get the type of repeatable child, or the type of repeat <tt>value</tt>.
+     *
+     * @return type of repeatable, or null.
+     */
+    @Nullable
+    Class<?> getRepeatableAnnotationType();
 
 
     /**
@@ -98,6 +135,25 @@ public interface AnnotationMetadata<A extends Annotation> {
     Map<String, Object> getProperties(@NotNull A annotation);
 
     /**
+     * Get the property mappings for target type.
+     * @param targetType mappings target.
+     * @return mappings
+     */
+    @Unmodifiable
+    Map<String, String> getPropertyNamingMaps(Class<? extends Annotation> targetType);
+
+
+    /**
+     * Get the property mapping for target type.
+     * @param targetType mapping target.
+     * @param propertyName property name of current.
+     * @return target name, or null.
+     */
+    @Nullable
+    String getPropertyNamingMap(Class<? extends Annotation> targetType, String propertyName);
+
+
+    /**
      * Get property value of specified annotation instance with property name.
      *
      * @param property   property name
@@ -108,15 +164,6 @@ public interface AnnotationMetadata<A extends Annotation> {
     @Nullable
     Object getAnnotationValue(@NotNull String property, @NotNull Annotation annotation) throws ReflectiveOperationException;
 
-
-    /**
-     * Get properties naming map for target annotation type.
-     *
-     * @param targetAnnotationType target type
-     * @return properties naming map, or empty.
-     */
-    @Unmodifiable
-    Map<String, String> getPropertiesNamingMap(Class<? extends Annotation> targetAnnotationType);
 
 
     /**

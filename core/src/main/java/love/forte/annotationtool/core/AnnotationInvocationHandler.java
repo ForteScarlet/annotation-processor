@@ -55,7 +55,7 @@ public class AnnotationInvocationHandler implements InvocationHandler, Serializa
             AnnotationMetadata<? extends Annotation> metadata,
             @Nullable Map<String, Object> memberValues,
             @Nullable Annotation baseAnnotation
-    ) {
+    ) throws ReflectiveOperationException {
         this.metadata = metadata;
 
         this.type = metadata.getAnnotationType();
@@ -67,14 +67,14 @@ public class AnnotationInvocationHandler implements InvocationHandler, Serializa
     AnnotationInvocationHandler(
             AnnotationMetadata<? extends Annotation> metadata,
             @Nullable Annotation baseAnnotation
-    ) {
+    ) throws ReflectiveOperationException {
         this(metadata, null, baseAnnotation);
     }
 
     AnnotationInvocationHandler(
             AnnotationMetadata<? extends Annotation> metadata,
             Map<String, Object> memberValues
-    ) {
+    ) throws ReflectiveOperationException {
         this(metadata, memberValues, null);
     }
 
@@ -82,52 +82,47 @@ public class AnnotationInvocationHandler implements InvocationHandler, Serializa
             Class<? extends Annotation> annotationType,
             @Nullable Map<String, Object> memberValues,
             @Nullable Annotation baseAnnotation
-    ) {
+    ) throws ReflectiveOperationException {
         this(AnnotationMetadata.resolve(annotationType), memberValues, baseAnnotation);
     }
 
     AnnotationInvocationHandler(
             Class<? extends Annotation> annotationType,
             @NotNull Annotation baseAnnotation
-    ) {
+    ) throws ReflectiveOperationException {
         this(annotationType, null, baseAnnotation);
     }
 
     AnnotationInvocationHandler(
             Class<? extends Annotation> annotationType,
             Map<String, Object> memberValues
-    ) {
+    ) throws ReflectiveOperationException {
         this(annotationType, memberValues, null);
     }
     //endregion
 
 
-    private static <A extends Annotation> LinkedHashMap<String, Object> resolveMemberValues(@Nullable Map<String, Object> memberValues, AnnotationMetadata<?> metadata, @Nullable Annotation instance) {
+    private static <A extends Annotation> LinkedHashMap<String, Object> resolveMemberValues(@Nullable Map<String, Object> memberValues, AnnotationMetadata<?> metadata, @Nullable Annotation instance) throws ReflectiveOperationException {
         if (memberValues == null) {
             memberValues = Collections.emptyMap();
         }
         final LinkedHashMap<String, Object> newMemberValues = new LinkedHashMap<>();
         final Set<String> names = metadata.getPropertyNames();
-        try {
 
-            for (String name : names) {
-                Object value = memberValues.get(name);
-                if (value == null) {
-                    if (instance != null) {
-                        value = metadata.getAnnotationValue(name, instance);
-                    } else {
-                        value = metadata.getPropertyDefaultValue(name);
-                        if (value == null) {
-                            throw new IncompleteAnnotationException(metadata.getAnnotationType(), name);
-                        }
+        for (String name : names) {
+            Object value = memberValues.get(name);
+            if (value == null) {
+                if (instance != null) {
+                    value = metadata.getAnnotationValue(name, instance);
+                } else {
+                    value = metadata.getPropertyDefaultValue(name);
+                    if (value == null) {
+                        throw new IncompleteAnnotationException(metadata.getAnnotationType(), name);
                     }
                 }
-
-                newMemberValues.put(name, value);
             }
 
-        } catch (ReflectiveOperationException e) {
-            throw new IllegalStateException(e);
+            newMemberValues.put(name, value);
         }
 
         return newMemberValues;
@@ -163,7 +158,7 @@ public class AnnotationInvocationHandler implements InvocationHandler, Serializa
                     return this.type;
                 default:
                     if (baseAnnotation != null) {
-                        return checkArray(metadata.getAnnotationValue(name, baseAnnotation));
+                        return checkArray(Objects.requireNonNull(metadata.getAnnotationValue(name, baseAnnotation)));
                     } else {
                         throw new IncompleteAnnotationException(this.type, name);
                     }
@@ -332,8 +327,8 @@ public class AnnotationInvocationHandler implements InvocationHandler, Serializa
             builder.append(memberValueToString(entry.getValue()));
         }
 
-        if (baseAnnotation != null) {
-
+        if (baseAnnotation != null && !(Proxy.getInvocationHandler(baseAnnotation) instanceof AnnotationInvocationHandler)) {
+            builder.append("base=").append(baseAnnotation);
         }
 
         builder.append(')');

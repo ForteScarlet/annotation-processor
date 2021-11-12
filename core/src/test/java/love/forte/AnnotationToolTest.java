@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import java.lang.annotation.*;
 import java.lang.reflect.Method;
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * @author ForteScarlet
@@ -28,42 +29,42 @@ public class AnnotationToolTest {
     }
 
     @Test
-    public void test1() throws NoSuchMethodException {
-
-
+    public void test1() throws ReflectiveOperationException {
 
         final Method myName = ChildAnno.class.getMethod("myName");
-        final AnnotationMapper.Properties properties = tool.getRepeatableAnnotation(myName, AnnotationMapper.Properties.class);
+        final List<AnnotationMapper.Property> properties = tool.getAnnotations(myName, AnnotationMapper.Property.class);
 
     }
 
     @Test
-    public void test2() throws NoSuchMethodException {
+    public void test2() throws ReflectiveOperationException {
         final Class<ChildAnno> childAnnoClass = ChildAnno.class;
         final Method myName = childAnnoClass.getMethod("myName");
 
-        long n1 = t(() -> tool.getRepeatableAnnotation(myName, AnnotationMapper.Properties.class));
-        long n2 = t(() -> tool.getRepeatableAnnotation(myName, AnnotationMapper.Properties.class));
-        long n3 = t(() -> tool.getRepeatableAnnotation(myName, AnnotationMapper.Properties.class));
-        long n4 = t(() -> tool.getRepeatableAnnotation(myName, AnnotationMapper.Properties.class));
-        long n5 = t(() -> tool.getRepeatableAnnotation(myName, AnnotationMapper.Properties.class));
-        long n6 = t(() -> tool.getRepeatableAnnotation(myName, AnnotationMapper.Properties.class));
-
-        System.out.println("n1 -> " + n1 + "\tns");
-        System.out.println("n2 -> " + n2 + "\tns");
-        System.out.println("n3 -> " + n3 + "\tns");
-        System.out.println("n4 -> " + n4 + "\tns");
-        System.out.println("n5 -> " + n5 + "\tns");
-        System.out.println("n6 -> " + n6 + "\tns");
-
-        final AnnotationMapper.Properties properties = tool.getRepeatableAnnotation(myName, AnnotationMapper.Properties.class);
+        final List<AnnotationMapper.Property> properties = tool.getAnnotations(myName, AnnotationMapper.Property.class);
 
         System.out.println(properties);
         assert properties != null;
         System.out.println("======");
-        for (AnnotationMapper.Property property : properties.value()) {
+        for (AnnotationMapper.Property property : properties) {
             System.out.println(property);
         }
+    }
+
+    @Test
+    @Ele("A")
+    // @Ele("B")
+    // @Ele("C")
+    public void test3() throws NoSuchMethodException {
+        final Method method = AnnotationToolTest.class.getMethod("test3");
+        final ELes eles = method.getDeclaredAnnotation(ELes.class);
+        System.out.println(eles);
+
+        final Ele[] eleArray = method.getDeclaredAnnotationsByType(Ele.class);
+        System.out.println(Arrays.toString(eleArray));
+
+        final Ele ele = method.getDeclaredAnnotation(Ele.class);
+        System.out.println(ele);
 
     }
 
@@ -112,7 +113,7 @@ public class AnnotationToolTest {
 }
 
 @Target(ElementType.METHOD)
-@Retention(RetentionPolicy.RUNTIME)
+// @Retention(RetentionPolicy.RUNTIME)
 @AnnotationMapper(AnnotationMapper.Property.class)
 @Repeatable(ELes.class)
 @interface Ele {

@@ -1,5 +1,6 @@
 package love.forte.annotationtool.core;
 
+import jdk.jfr.AnnotationElement;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -9,7 +10,6 @@ import java.lang.annotation.Repeatable;
 import java.lang.annotation.Target;
 import java.lang.reflect.*;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * This is the default implementation of the library for the {@link AnnotationTool} and is based on the {@link Proxy JDK Proxy} which implements the functionality required by the {@link AnnotationTool}.
@@ -45,10 +45,6 @@ class SimpleAnnotationTool implements AnnotationTool {
         set.add("kotlin.annotation.MustBeDocumented");
         set.add("kotlin.annotation.Repeatable");
 
-        // set.add(AnnotationMapper.class.getName());
-        // set.add(AnnotationMapper.Properties.class.getName());
-        // set.add(AnnotationMapper.Property.class.getName());
-
         EXCLUDE_META_ANNOTATION = set;
     }
 
@@ -62,8 +58,17 @@ class SimpleAnnotationTool implements AnnotationTool {
     }
 
 
+    /**
+     * TODO 如果要获取的是可重复注解, 填充子元素
+     *
+     * @param fromElement    annotation fromElement instance.
+     * @param annotationType annotation type.
+     * @param excludes       excludes annotation class name. They will not be parsing.
+     * @param <A>            annotation type
+     * @return annotation instance.
+     */
     @Override
-    public <A extends Annotation> @Nullable A getAnnotation(AnnotatedElement fromElement, Class<A> annotationType, @NotNull Set<String> excludes) {
+    public <A extends Annotation> @Nullable A getAnnotation(AnnotatedElement fromElement, Class<A> annotationType, @Nullable Set<String> excludes) throws ReflectiveOperationException {
         if (EXCLUDE_META_ANNOTATION.contains(annotationType.getName())) {
             // If you really want to get meta-annotation, just get, but no deep, no proxy.
             return fromElement.getAnnotation(annotationType);
@@ -76,8 +81,6 @@ class SimpleAnnotationTool implements AnnotationTool {
         // find cache
         final A cached = getCache(fromElement, annotationType);
         if (cached != null) return cached;
-
-        Objects.requireNonNull(excludes, "excludes cannot be null");
 
         // Try to get it directly.
         final A directly = fromElement.getAnnotation(annotationType);
@@ -118,160 +121,95 @@ class SimpleAnnotationTool implements AnnotationTool {
     }
 
 
+    /**
+     * @param element        annotation element instance. e.g. from {@link Class} or {@link java.lang.reflect.Method}.
+     * @param annotationType annotation type. if repeatable, should be the subtype.
+     * @param excludes       excludes annotation class name. will not be checked.
+     * @param <A>            annotation type
+     * @return annotation instances.
+     */
     @Override
-    public <A extends Annotation> @Nullable A getRepeatableAnnotation(AnnotatedElement element, Class<A> parentType, @NotNull Set<String> excludes) {
-        // get sub values.
-        final Method value;
-        try {
-            value = parentType.getMethod("value");
-            value.setAccessible(true);
-        } catch (NoSuchMethodException e) {
-            throw new IllegalStateException(e);
-        }
+    public <A extends Annotation> List<A> getAnnotations(AnnotatedElement element, Class<A> annotationType, @NotNull Set<String> excludes) throws ReflectiveOperationException {
+        // check repeatable
+        final Repeatable repeatable = annotationType.getAnnotation(Repeatable.class);
+        final Class<? extends Annotation> repeatParentType;
+        final AnnotationMetadata<? extends Annotation> parentAnnotationType;
 
-        final Class<?> subtypeArray = value.getReturnType();
-        if (!subtypeArray.isArray()) {
-            throw new IllegalStateException("Not a repeatable annotation");
-        }
+        if (repeatable != null) {
+            // find cache for parent repeatable type.
+            repeatParentType = repeatable.value();
+            parentAnnotationType = AnnotationMetadata.resolve(repeatParentType);
 
-        Class<?> subtype = subtypeArray.getComponentType();
-        if (!subtype.isAnnotation()) {
-            throw new IllegalStateException("Not a repeatable annotation");
-        }
+            if (isNull(element, repeatParentType)) {
+                return emptyList();
+            }
 
-        final Repeatable subTypeRepeatable = subtype.getAnnotation(Repeatable.class);
-        if (subTypeRepeatable == null || !subTypeRepeatable.value().equals(parentType)) {
-            throw new IllegalStateException("Not a repeatable annotation");
-        }
-
-        // first Repeat able annotation.
-        A repeatableAnnotation = getAnnotation(element, parentType, excludes);
-
-
-        @SuppressWarnings("unchecked")
-        final List<Annotation> allAnnotations = getAllRepeatableSubtypeAnnotations(element, parentType, (Class<Annotation>) subtype, resolveExclude(excludes), new ArrayList<>(8));
-
-        final Map<String, Object> newValueMap;
-
-        if (repeatableAnnotation == null) {
-            newValueMap = new HashMap<>();
-            final Object array = toArray(subtype, allAnnotations);
-            newValueMap.put("value", array);
+            final Annotation cachedRepeatableAnnotation = getCache(element, repeatParentType);
+            if (cachedRepeatableAnnotation != null) {
+                final List<A> repeatAnnotationValues = getRepeatAnnotationValues(parentAnnotationType, cachedRepeatableAnnotation);
+                if (repeatAnnotationValues != null) {
+                    return repeatAnnotationValues;
+                }
+            }
 
         } else {
-            // not null, merge.
-            final Map<String, Object> annotationValues = getAnnotationValues(repeatableAnnotation);
-            Object[] oldValues = (Object[]) annotationValues.get("value");
-            if (oldValues != null) {
-                for (Object oldValue : oldValues) {
-                    allAnnotations.add((Annotation) oldValue);
+            repeatParentType = null;
+            parentAnnotationType = null;
+        }
+
+        List<A> allAnnotations = new ArrayList<>(8);
+
+
+        if (repeatParentType != null) {
+            // yes, repeatable, but no cache, get instance for its parent type.
+            final Annotation parentAnnotation = getAnnotation(element, repeatParentType);
+            if (parentAnnotation != null) {
+                final List<A> values = getRepeatAnnotationValues(parentAnnotationType, parentAnnotation);
+                return values == null ? emptyList() : values;
+            }
+        } else {
+            // not repeatable, find all from annotations.
+            for (Annotation annotation : annotationType.getAnnotations()) {
+                if (checkExclude(annotation, excludes, true)) {
+                    continue;
                 }
-            }
-            // reset value
-            final Object array = toArray(subtype, allAnnotations);
-            annotationValues.put("value", array);
-            newValueMap = annotationValues;
-
-        }
-
-        repeatableAnnotation = proxy(parentType, parentType.getClassLoader(), null, newValueMap);
-        // cache
-        saveCache(element, repeatableAnnotation);
-        return repeatableAnnotation;
-    }
-
-
-    // private
-
-
-    private <A extends Annotation> List<A> getAllRepeatableSubtypeAnnotations(AnnotatedElement element, Class<? extends Annotation> parentType, Class<A> subtype, Set<String> exclude, List<A> collection) {
-        // 首先尝试直接获取一个子类
-        A dirSub = element.getAnnotation(subtype);
-        if (dirSub != null) {
-            dirSub = checkAnnotationProxy(dirSub);
-            collection.add(dirSub);
-        }
-
-        // 在尝试直接获取一个父类
-        // final Annotation dirParent = element.getAnnotation(parentType);
-        // if (dirParent != null) {
-        //     try {
-        //         Method value = dirParent.annotationType().getMethod("value");
-        //         //noinspection unchecked
-        //         collection.addAll(Arrays.asList((A[]) value.invoke(dirParent)));
-        //     } catch (Exception e) {
-        //         throw new IllegalStateException(e);
-        //     }
-        // }
-
-
-        for (Annotation elementAnnotation : element.getAnnotations()) {
-            Set<String> thisExclude = new HashSet<>(exclude);
-            if (checkExclude(elementAnnotation, thisExclude, true)) {
-                continue;
-            }
-            final Class<? extends Annotation> annotationType = elementAnnotation.annotationType();
-
-            // 子类型 一对一继承
-            // 类型不能完全一样，因为上面已经直接获取过了.
-            if (!annotationType.equals(subtype) && checkMappable(elementAnnotation, subtype)) {
-                collection.add(mapping(elementAnnotation, subtype));
-            } else {
-                // not mappable, deep for subtype.
-                getAllRepeatableSubtypeAnnotations(annotationType, parentType, subtype, thisExclude, collection);
-            }
-
-            // 父类型 一对一继承，递归寻找其子类型
-            if (!annotationType.equals(parentType) && checkRepeatableMappable(elementAnnotation, subtype)) {
-                // 寻找这个可重复注解的在当前element下的所有其他子注解。
-                final Annotation thisRepeatableAnnotation = getRepeatableAnnotation(element, annotationType, thisExclude);
-                if (thisRepeatableAnnotation != null) {
-                    final List<A> subAnnotations = mappingRepeatableSub(thisRepeatableAnnotation, subtype);
-                    collection.addAll(subAnnotations);
+                if (annotation.annotationType().equals(annotationType)) {
+                    final A tryMapped = mapping(annotation, annotationType);
+                    // try mapping
+                    mapping(annotation, annotationType);
                 }
 
+                // getAnnotationFromAnnotation(annotation, element, annotationType, )
             }
+
         }
 
-
-        // merge them all.
-
-
-        return collection;
+        // TODO
+        return allAnnotations;
+        // return repeatableAnnotation;
     }
 
-
-    /**
-     * 尝试获取可重复注解的子类型。如果不是可重复注解，得到null。
-     *
-     * @param parentAnnotationType parent annotation type.
-     * @return subtype, if exists.
-     */
-    private Class<? extends Annotation> checkRepeatableSubtype(Class<? extends Annotation> parentAnnotationType) {
-        final Method value;
-        try {
-            value = parentAnnotationType.getMethod("value");
-            value.setAccessible(true);
-        } catch (NoSuchMethodException e) {
-            return null;
+    private static <A extends Annotation> List<A> getRepeatAnnotationValues(AnnotationMetadata<?> metadata, Annotation parent) throws ReflectiveOperationException {
+        final Object value = metadata.getAnnotationValue("value", parent);
+        if (value != null) {
+            //noinspection unchecked
+            final A[] valueArray = (A[]) value;
+            switch (valueArray.length) {
+                case 0:
+                    return emptyList();
+                case 1:
+                    return Collections.singletonList(valueArray[0]);
+                default:
+                    return new ArrayList<>(Arrays.asList(valueArray));
+            }
         }
-
-        final Class<?> returnType = value.getReturnType();
-        if (!returnType.isAnnotation()) {
-            return null;
-        }
-
-        // returnType.getDeclaredAnnotation()
-
-
         return null;
     }
-
 
     /**
      * Get an annotation from other annotation instance.
      */
-    private <A extends Annotation> A getAnnotationFromAnnotation(Annotation fromInstance, AnnotatedElement from, Class<A> annotationType, Set<String> excludes, boolean saveCache) {
+    private <A extends Annotation> A getAnnotationFromAnnotation(Annotation fromInstance, AnnotatedElement from, Class<A> annotationType, Set<String> excludes, boolean saveCache) throws ReflectiveOperationException {
         // 首先尝试获取缓存
         A cache = getCache(from, annotationType);
         if (cache != null) {
@@ -289,7 +227,7 @@ class SimpleAnnotationTool implements AnnotationTool {
         // 如果存在直接返回，否则查询
         if (annotation != null) {
             // 首先将其转化为对应的代理实例
-            annotation = mapping(fromInstance, checkAnnotationProxy(annotation));
+            annotation = checkAnnotationProxy(mapping(fromInstance, annotation));
             if (saveCache) {
                 saveCache(from, annotation);
             }
@@ -306,18 +244,11 @@ class SimpleAnnotationTool implements AnnotationTool {
                 continue;
             }
 
-            final AnnotationMapper mapper = anno.annotationType().getAnnotation(AnnotationMapper.class);
-            if (mapper != null) {
-                for (Class<? extends Annotation> type : mapper.value()) {
-                    // if contains finding annotation type
-                    if (type.equals(annotationType)) {
-                        // this anno can be mapping
-                        final A annotationMapped = mapping(anno, annotationType);
-                        saveCache(from, annotationMapped);
-                        return annotationMapped;
-                    }
-                }
+            final A got = getAnnotationFromAnnotation(anno, from, annotationType, excludes, saveCache);
+            if (got != null) {
+
             }
+            // }
         }
 
 
@@ -354,20 +285,20 @@ class SimpleAnnotationTool implements AnnotationTool {
     }
 
 
+
     /**
      * 从数组中获取指定注解实例。
      */
     // @SuppressWarnings("unchecked")
-    private <A extends Annotation> A getAnnotationFromArrays(@Nullable Annotation from, Annotation[] array, Class<A> annotationType, Set<String> exclude) {
+    private <A extends Annotation> A getAnnotationFromArrays(@Nullable Annotation from, Annotation[] array, Class<A> annotationType, Set<String> exclude) throws ReflectiveOperationException {
         //先浅查询第一层
         //全部注解
-        List<Annotation> annotations = Arrays.stream(array)
-                // 如果此注解的类型就是我要的，直接放过
-                .filter(a -> a.annotationType().equals(annotationType))
-                .filter(a -> !checkExclude(a, exclude, true))
-                .map(a -> from != null ? mapping(from, a) : a)
-                .collect(Collectors.toList());
-
+        List<Annotation> annotations = new ArrayList<>(array.length);
+        for (Annotation a : array) {
+            if (a.annotationType().equals(annotationType) && !checkExclude(a, exclude, true)) {
+                annotations.add(from != null ? mapping(from, a) : a);
+            }
+        }
 
         if (annotations.isEmpty()) {
             return null;
@@ -391,6 +322,11 @@ class SimpleAnnotationTool implements AnnotationTool {
 
         //如果还是没有找到，返回null
         return null;
+    }
+
+
+    private <A extends Annotation> List<A> getAnnotationsFromAnnotation(Annotation annotation, AnnotationElement fromElement, Class<A> annotationType, Set<String> excludes) {
+
     }
 
 
@@ -451,7 +387,7 @@ class SimpleAnnotationTool implements AnnotationTool {
 
 
     @Override
-    public @NotNull Map<String, Object> getAnnotationValues(@NotNull Annotation annotation) {
+    public @NotNull Map<String, Object> getAnnotationValues(@NotNull Annotation annotation) throws ReflectiveOperationException {
         if (annotation instanceof Proxy) {
             final InvocationHandler invocationHandler = Proxy.getInvocationHandler(annotation);
             if (invocationHandler instanceof AnnotationInvocationHandler) {
@@ -493,13 +429,13 @@ class SimpleAnnotationTool implements AnnotationTool {
 
 
     @Override
-    public @NotNull Set<String> getProperties(@NotNull Annotation annotation) {
+    public @NotNull Set<String> getProperties(@NotNull Annotation annotation) throws ReflectiveOperationException {
         return getAnnotationValues(annotation).keySet();
     }
 
 
     @Override
-    public <A extends Annotation> @NotNull A createAnnotationInstance(@NotNull Class<A> annotationType, @NotNull ClassLoader classLoader, @Nullable Map<String, Object> properties, @Nullable A base) {
+    public <A extends Annotation> @NotNull A createAnnotationInstance(@NotNull Class<A> annotationType, @NotNull ClassLoader classLoader, @Nullable Map<String, Object> properties, @Nullable A base) throws ReflectiveOperationException {
         return proxy(annotationType, classLoader, base, properties);
     }
 
@@ -509,7 +445,7 @@ class SimpleAnnotationTool implements AnnotationTool {
     private static <A extends Annotation> A proxy(Class<A> annotationType,
                                                   ClassLoader classLoader,
                                                   @Nullable A baseAnnotation,
-                                                  @Nullable Map<String, Object> params) {
+                                                  @Nullable Map<String, Object> params) throws ReflectiveOperationException {
 
         return (A) Proxy.newProxyInstance(classLoader,
                 new Class[]{annotationType},
@@ -518,7 +454,7 @@ class SimpleAnnotationTool implements AnnotationTool {
 
 
     @SuppressWarnings("unchecked")
-    private static <A extends Annotation> A checkAnnotationProxy(A annotation) {
+    private static <A extends Annotation> A checkAnnotationProxy(A annotation) throws ReflectiveOperationException {
 
         if (annotation instanceof Proxy) {
             final InvocationHandler invocationHandler = Proxy.getInvocationHandler(annotation);
@@ -532,13 +468,13 @@ class SimpleAnnotationTool implements AnnotationTool {
     //endregion
 
 
-    private <F extends Annotation, T extends Annotation> boolean checkMappable(F sourceAnnotation, Class<T> targetType) {
+    private <F extends Annotation, T extends Annotation> boolean checkMappable(F sourceAnnotation, Class<T> targetType) throws ReflectiveOperationException {
         final Class<? extends Annotation> sourceAnnotationType = sourceAnnotation.annotationType();
         return checkMappable(sourceAnnotationType, targetType);
     }
 
 
-    private <F extends Annotation, T extends Annotation> boolean checkMappable(Class<F> sourceAnnotationType, Class<T> targetType) {
+    private <F extends Annotation, T extends Annotation> boolean checkMappable(Class<F> sourceAnnotationType, Class<T> targetType) throws ReflectiveOperationException {
         final AnnotationMapper sourceAnnotationMapper = getAnnotation(sourceAnnotationType, AnnotationMapper.class);
         if (sourceAnnotationMapper == null) {
             return false;
@@ -557,7 +493,7 @@ class SimpleAnnotationTool implements AnnotationTool {
      * @param targetSubType    the repeatable subtype
      * @return is if can
      */
-    private <F extends Annotation, T extends Annotation> boolean checkRepeatableMappable(F sourceAnnotation, Class<T> targetSubType) {
+    private <F extends Annotation, T extends Annotation> boolean checkRepeatableMappable(F sourceAnnotation, Class<T> targetSubType) throws ReflectiveOperationException {
         final Class<? extends Annotation> sourceAnnotationType = sourceAnnotation.annotationType();
         final Method value;
         try {
@@ -583,7 +519,7 @@ class SimpleAnnotationTool implements AnnotationTool {
      *
      * @return target annotation.
      */
-    private <F extends Annotation, T extends Annotation> T mapping(F sourceAnnotation, Class<T> targetType) {
+    private <F extends Annotation, T extends Annotation> T mapping(F sourceAnnotation, Class<T> targetType) throws ReflectiveOperationException {
         final AnnotationMetadata<T> targetMetadata = AnnotationMetadata.resolve(targetType);
         final Map<String, Class<?>> targetPropertyTypes = targetMetadata.getPropertyTypes();
 
@@ -597,7 +533,8 @@ class SimpleAnnotationTool implements AnnotationTool {
 
         for (Method method : sourceAnnotationType.getMethods()) {
             String propertyName = method.getName();
-            final AnnotationMapper.Properties propertyMappings = getRepeatableAnnotation(method, AnnotationMapper.Properties.class);
+            // final AnnotationMapper.Properties propertyMappings = getAnnotations(method, AnnotationMapper.Properties.class);
+            final AnnotationMapper.Properties propertyMappings = null; // TODO // getAnnotations(method, AnnotationMapper.Properties.class);
             final Object sourceValue = sourceAnnotationValues.get(propertyName);
 
             // if mappings not null
@@ -639,7 +576,11 @@ class SimpleAnnotationTool implements AnnotationTool {
             final Method value = annotationType.getMethod("value");
             value.setAccessible(true);
             final A[] valueArray = (A[]) value.invoke(sourceParentAnnotation);
-            return Arrays.stream(valueArray).map(v -> mapping(v, targetSubtype)).collect(Collectors.toList());
+            List<A> list = new ArrayList<>(valueArray.length);
+            for (A v : valueArray) {
+                list.add(mapping(v, targetSubtype));
+            }
+            return list;
         } catch (Exception e) {
             throw new IllegalStateException(e);
         }
@@ -658,10 +599,18 @@ class SimpleAnnotationTool implements AnnotationTool {
      * Map <tt>source</tt> to <tt>target</tt>.
      * 其中，<tt>target</tt> 注解实例是从 <tt>source</tt> 注解实例上获取到的。
      * 因此，在提供 <tt>target</tt> 的基础上，通过 <tt>source</tt> 对 <tt>target</tt> 进行映射。
+     * 如果无法映射，即既未标注 {@link AnnotationMapper}, 也没有直接标记目标注解，得到null。
      */
     @SuppressWarnings("unchecked")
-    private <F extends Annotation, T extends Annotation> T mapping(F source, T target) {
-        final Class<? extends Annotation> fromAnnotationType = source.annotationType();
+    private <F extends Annotation, T extends Annotation> T mapping(F source, T target) throws ReflectiveOperationException {
+        final Class<F> fromAnnotationType = (Class<F>) source.annotationType();
+
+        // 看看有没有from中的属性里有没有能映射为T的
+        final AnnotationMetadata<F> metadata = AnnotationMetadata.resolve(fromAnnotationType);
+
+
+
+
         Map<String, String> mapper = findPropertyMapper(fromAnnotationType, target.annotationType());
         final Map<String, Object> sourceValues = getAnnotationValues(source);
 
@@ -669,23 +618,6 @@ class SimpleAnnotationTool implements AnnotationTool {
 
         final Set<String> propertyNames = targetMetadata.getPropertyNames();
 
-
-        // final AnnotationMapper annotationMapper = getAnnotation(fromAnnotationType, AnnotationMapper.class);
-        // if (annotationMapper != null) {
-        //     // find mapper
-        //     final Class<? extends Annotation>[] mappings = annotationMapper.value();
-        //     for (Class<? extends Annotation> type : mappings) {
-        //         if (type.equals(fromAnnotationType)) {
-        //
-        //             break;
-        //         }
-        //     }
-        //
-        //
-        // } else {
-        //
-        //
-        // }
 
         // todo
         return null;
@@ -695,7 +627,7 @@ class SimpleAnnotationTool implements AnnotationTool {
     /**
      * 尝试得到一个注解上的 {@link AnnotationMapper} 注解。
      */
-    private AnnotationMapper getMapper(Class<? extends Annotation> annotationType) {
+    private AnnotationMapper getMapper(Class<? extends Annotation> annotationType) throws ReflectiveOperationException {
         return getAnnotation(annotationType, AnnotationMapper.class);
     }
 
@@ -707,7 +639,7 @@ class SimpleAnnotationTool implements AnnotationTool {
      * @param targetType     target
      * @return property map, or empty map.
      */
-    private Map<String, String> findPropertyMapper(Class<? extends Annotation> annotationType, Class<? extends Annotation> targetType) {
+    private Map<String, String> findPropertyMapper(Class<? extends Annotation> annotationType, Class<? extends Annotation> targetType) throws ReflectiveOperationException {
         final AnnotationMapper mapper = getMapper(annotationType);
         if (mapper == null) {
             return Collections.emptyMap();
@@ -738,6 +670,10 @@ class SimpleAnnotationTool implements AnnotationTool {
 
     private static <K, V> Map<K, V> emptyMap() {
         return Collections.emptyMap();
+    }
+
+    private static <T> List<T> emptyList() {
+        return Collections.emptyList();
     }
 
     private static Object toArray(Class<?> type, @NotNull List<?> list) {
