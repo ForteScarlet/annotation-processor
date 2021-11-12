@@ -327,6 +327,8 @@ class SimpleAnnotationTool implements AnnotationTool {
 
     private <A extends Annotation> List<A> getAnnotationsFromAnnotation(Annotation annotation, AnnotationElement fromElement, Class<A> annotationType, Set<String> excludes) {
 
+        // TODO
+        return emptyList();
     }
 
 
