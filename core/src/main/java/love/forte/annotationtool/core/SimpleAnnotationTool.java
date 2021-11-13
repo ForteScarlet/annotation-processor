@@ -30,7 +30,7 @@ class SimpleAnnotationTool implements AnnotationTool {
 
 
     static {
-        final HashSet<String> set = new HashSet<>(4);
+        final HashSet<String> set = new HashSet<>(16);
         // Java meta-annotation
         set.add("java.lang.annotation.Documented");
         set.add("java.lang.annotation.Retention");
@@ -59,6 +59,7 @@ class SimpleAnnotationTool implements AnnotationTool {
 
 
     /**
+     * 获取一个annotation
      * TODO 如果要获取的是可重复注解, 填充子元素
      *
      * @param fromElement    annotation fromElement instance.
@@ -91,8 +92,6 @@ class SimpleAnnotationTool implements AnnotationTool {
             return resultAnnotation;
         }
 
-        // get nothing directly
-
 
         Set<String> realExclude = resolveExclude(excludes);
 
@@ -116,7 +115,6 @@ class SimpleAnnotationTool implements AnnotationTool {
 
 
         nullCache(fromElement, annotationType);
-        // TODO
         return null;
     }
 
@@ -283,7 +281,6 @@ class SimpleAnnotationTool implements AnnotationTool {
 
         return annotation;
     }
-
 
 
     /**
@@ -609,8 +606,6 @@ class SimpleAnnotationTool implements AnnotationTool {
 
         // 看看有没有from中的属性里有没有能映射为T的
         final AnnotationMetadata<F> metadata = AnnotationMetadata.resolve(fromAnnotationType);
-
-
 
 
         Map<String, String> mapper = findPropertyMapper(fromAnnotationType, target.annotationType());
