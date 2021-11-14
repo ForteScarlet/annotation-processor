@@ -282,7 +282,7 @@ final class SimpleAnnotationMetadata<A extends Annotation> implements Annotation
 
     @Override
     public @Unmodifiable Map<String, String> getPropertyNamingMaps(Class<? extends Annotation> targetType) {
-        final Map<String, String> namingMap = namingMaps.get(targetType);
+        final Map<String, String> namingMap = namingMaps.getOrDefault(targetType, namingMaps.getOrDefault(Annotation.class, Collections.emptyMap()));
 
         final AnnotationMetadata<? extends Annotation> targetMetadata = AnnotationMetadata.resolve(targetType);
         final Set<String> targetNames;
@@ -291,6 +291,7 @@ final class SimpleAnnotationMetadata<A extends Annotation> implements Annotation
         } else {
             targetNames = targetMetadata.getPropertyNames();
         }
+
 
         final Map<String, String> map = new LinkedHashMap<>(namingMap);
         for (String targetName : targetNames) {

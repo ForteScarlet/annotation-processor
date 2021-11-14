@@ -328,7 +328,7 @@ public class AnnotationInvocationHandler implements InvocationHandler, Serializa
         }
 
         if (baseAnnotation != null && !(Proxy.getInvocationHandler(baseAnnotation) instanceof AnnotationInvocationHandler)) {
-            builder.append("base=").append(baseAnnotation);
+            builder.append(", base=").append(baseAnnotation);
         }
 
         builder.append(')');
