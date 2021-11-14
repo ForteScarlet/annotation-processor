@@ -62,7 +62,8 @@ public interface AnnotationTool {
      * @param excludes       excludes annotation class name. will not be checked.
      * @return The annotation instance, or empty.
      */
-    @Unmodifiable <A extends Annotation> List<A> getAnnotations(AnnotatedElement element, Class<A> annotationType, @NotNull Set<String> excludes) throws ReflectiveOperationException;
+    @Unmodifiable
+    @NotNull <A extends Annotation> List<A> getAnnotations(AnnotatedElement element, Class<A> annotationType, @NotNull Set<String> excludes) throws ReflectiveOperationException;
 
     /**
      * Get a repeatable annotation instance from {@link AnnotatedElement}. e.g. from {@link Class} or {@link java.lang.reflect.Method}.
@@ -72,6 +73,7 @@ public interface AnnotationTool {
      * @return The annotation instance, or empty.
      */
     @Unmodifiable
+    @NotNull
     default <A extends Annotation> List<A> getAnnotations(AnnotatedElement element, Class<A> annotationType) throws ReflectiveOperationException {
         return getAnnotations(element, annotationType, Collections.emptySet());
     }
@@ -84,8 +86,7 @@ public interface AnnotationTool {
      * @return annotation property values. Treat it as <b>immutable</b> plz.
      */
     @NotNull
-    @Unmodifiable
-    <A extends Annotation> Map<String, Object> getAnnotationValues(@NotNull A annotation) throws ReflectiveOperationException;
+    @Unmodifiable <A extends Annotation> Map<String, Object> getAnnotationValues(@NotNull A annotation) throws ReflectiveOperationException;
 
     /**
      * Get annotation property names.

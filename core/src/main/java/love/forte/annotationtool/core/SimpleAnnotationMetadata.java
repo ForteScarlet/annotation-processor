@@ -283,15 +283,46 @@ final class SimpleAnnotationMetadata<A extends Annotation> implements Annotation
     @Override
     public @Unmodifiable Map<String, String> getPropertyNamingMaps(Class<? extends Annotation> targetType) {
         final Map<String, String> namingMap = namingMaps.get(targetType);
-        if (namingMap == null) {
-            return Collections.emptyMap();
+
+        final AnnotationMetadata<? extends Annotation> targetMetadata = AnnotationMetadata.resolve(targetType);
+        final Set<String> targetNames;
+        if (targetMetadata instanceof SimpleAnnotationMetadata) {
+            targetNames = ((SimpleAnnotationMetadata<? extends Annotation>) targetMetadata).propertyTypes.keySet();
+        } else {
+            targetNames = targetMetadata.getPropertyNames();
         }
-        return new LinkedHashMap<>(namingMap);
+
+        final Map<String, String> map = new LinkedHashMap<>(namingMap);
+        for (String targetName : targetNames) {
+            if (!map.containsKey(targetName) && propertyTypes.containsKey(targetName)) {
+                map.put(targetName, targetName);
+            }
+        }
+        return map;
     }
 
     @Override
     public @Nullable String getPropertyNamingMap(Class<? extends Annotation> targetType, String targetPropertyName) {
-        return namingMaps.getOrDefault(targetType, Collections.emptyMap()).get(targetPropertyName);
+        final String targetMapping = namingMaps.getOrDefault(targetType, Collections.emptyMap()).get(targetPropertyName);
+        if (targetMapping != null) {
+            return targetMapping;
+        }
+
+        if (containsProperty(targetType, targetPropertyName) && propertyTypes.containsKey(targetPropertyName)) {
+            return targetPropertyName;
+        }
+
+        return null;
+    }
+
+    private boolean containsProperty(Class<? extends Annotation> targetType, String property) {
+        final AnnotationMetadata<? extends Annotation> targetMetadata = AnnotationMetadata.resolve(targetType);
+        if (targetMetadata instanceof SimpleAnnotationMetadata) {
+            return ((SimpleAnnotationMetadata<? extends Annotation>) targetMetadata).propertyTypes.containsKey(property);
+        } else {
+            return targetMetadata.getPropertyNames().contains(property);
+        }
+
     }
 
     @Override
