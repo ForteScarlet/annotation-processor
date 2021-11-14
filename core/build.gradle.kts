@@ -1,7 +1,8 @@
 plugins {
     java
+    id("maven-publish")
+    id("signing")
 }
-
 
 repositories {
     mavenCentral()
@@ -14,3 +15,4 @@ dependencies {
 tasks.getByName<Test>("test") {
     useJUnitPlatform()
 }
+
