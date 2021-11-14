@@ -1,13 +1,19 @@
 plugins {
     java
+    id("maven-publish")
+    id("signing")
 }
 
-group = "love.forte.annotationTool"
-version = "1.0-SNAPSHOT"
+
+group = P.GROUP // "love.forte.annotationTool"
+version = P.VERSION // "0.5.0"
 
 repositories {
     mavenCentral()
 }
+
+val credentialsUsernameKey = "sonatype.username"
+val credentialsPasswordKey = "sonatype.password"
 
 
 subprojects {
