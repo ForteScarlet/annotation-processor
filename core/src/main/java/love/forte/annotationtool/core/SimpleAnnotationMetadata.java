@@ -6,6 +6,7 @@ import org.jetbrains.annotations.Unmodifiable;
 
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
+import java.lang.annotation.IncompleteAnnotationException;
 import java.lang.annotation.Repeatable;
 import java.lang.ref.WeakReference;
 import java.lang.reflect.InvocationHandler;
@@ -29,7 +30,8 @@ final class SimpleAnnotationMetadata<A extends Annotation> implements Annotation
     @SuppressWarnings({"FieldCanBeLocal", "unused"})
     private transient final Map<String, Class<?>> propertyTypes;
     private transient final Map<String, Object> propertyDefaults;
-    private transient final Map<String, Method> methods = new HashMap<>(4);
+    private transient final Map<String, Method> methods;
+    private transient final Map<Class<? extends Annotation>, Map<String, String>> namingMaps;
 
     public SimpleAnnotationMetadata(Class<A> annotationType) {
         this.annotationType = new WeakReference<>(annotationType);
@@ -38,8 +40,10 @@ final class SimpleAnnotationMetadata<A extends Annotation> implements Annotation
 
 
         final Method[] methods = annotationType.getMethods();
-        propertyTypes = new LinkedHashMap<>(methods.length);
-        propertyDefaults = new LinkedHashMap<>();
+        this.methods = new LinkedHashMap<>(methods.length);
+        Map<String, Class<?>> propertyTypes = new LinkedHashMap<>(methods.length);
+        Map<String, Object> propertyDefaults = new LinkedHashMap<>();
+        Map<Class<? extends Annotation>, Map<String, String>> namingMaps = new LinkedHashMap<>(methods.length);
 
         Class<?> repeatableChildType = null;
 
@@ -74,10 +78,63 @@ final class SimpleAnnotationMetadata<A extends Annotation> implements Annotation
             if (defaultValue != null) {
                 propertyDefaults.put(name, defaultValue);
             }
-        }
 
+            method.setAccessible(true);
+            this.methods.put(name, method);
+            final AnnotationMapper mapper = annotationType.getAnnotation(AnnotationMapper.class);
+            final Class<? extends Annotation> defaultMapType;
+            if (mapper == null) {
+                defaultMapType = null;
+            } else {
+                final Class<? extends Annotation>[] values = mapper.value();
+                if (values.length != 1) {
+                    defaultMapType = null;
+                } else {
+                    defaultMapType = values[0];
+                }
+            }
+
+            final AnnotationMapper.Property[] properties = method.getAnnotationsByType(AnnotationMapper.Property.class);
+            if (properties != null && properties.length > 0) {
+                for (AnnotationMapper.Property property : properties) {
+                    Class<? extends Annotation> target = property.target();
+                    if (target == null) {
+                        if (defaultMapType != null) {
+                            target = defaultMapType;
+                        } else { // 无法确定属性的默认映射目标
+                            throw new IllegalStateException("Unable to determine the default mapping target of the property.");
+                        }
+                    }
+                    String targetName = property.value();
+                    namingMaps.computeIfAbsent(target, k -> new LinkedHashMap<>()).merge(targetName, name, (v1, v2) -> {
+                        throw new IllegalStateException("Duplicate mapping target: " + v1 + " -> " + targetName +" vs " + v2 + " -> " + targetName);
+                    });
+                }
+
+            }
+        }
         this.repeatableAnnotationType = repeatableChildType;
         repeatable = rpa;
+
+        if (propertyTypes.isEmpty()) {
+            this.propertyTypes = Collections.emptyMap();
+        } else {
+            this.propertyTypes = propertyTypes;
+        }
+
+        if (propertyDefaults.isEmpty()) {
+            this.propertyDefaults = Collections.emptyMap();
+        } else {
+            this.propertyDefaults = propertyDefaults;
+        }
+
+        if (namingMaps.isEmpty()) {
+            this.namingMaps = Collections.emptyMap();
+        } else {
+            this.namingMaps = namingMaps;
+        }
+
+
     }
 
     @Nullable
@@ -184,7 +241,7 @@ final class SimpleAnnotationMetadata<A extends Annotation> implements Annotation
     }
 
     @Override
-    public Map<String, Object> getProperties(@NotNull A annotation) {
+    public Map<String, Object> getProperties(@NotNull A annotation) throws ReflectiveOperationException {
         Objects.requireNonNull(annotation, "annotation should not be null");
 
         if (Proxy.isProxyClass(annotation.getClass())) {
@@ -194,21 +251,47 @@ final class SimpleAnnotationMetadata<A extends Annotation> implements Annotation
             }
         }
 
-
-        // TODO
-        return null;
+        return getMemberValues(annotation);
     }
+
+
+    private Map<String, Object> getMemberValues(@NotNull Annotation instance) throws ReflectiveOperationException {
+        final Set<String> names = getPropertyNames();
+        if (names.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        final LinkedHashMap<String, Object> memberValues = new LinkedHashMap<>(names.size());
+
+
+        for (String name : names) {
+            Object value = getAnnotationValue(name, instance);
+            if (value == null) {
+                value = getPropertyDefaultValue(name);
+                if (value == null) {
+                    throw new IncompleteAnnotationException(getAnnotationType(), name);
+                }
+            }
+
+            memberValues.put(name, value);
+        }
+
+        return memberValues;
+    }
+
 
     @Override
     public @Unmodifiable Map<String, String> getPropertyNamingMaps(Class<? extends Annotation> targetType) {
-        // TODO
-        return Collections.emptyMap();
+        final Map<String, String> namingMap = namingMaps.get(targetType);
+        if (namingMap == null) {
+            return Collections.emptyMap();
+        }
+        return new LinkedHashMap<>(namingMap);
     }
 
     @Override
-    public @Nullable String getPropertyNamingMap(Class<? extends Annotation> targetType, String propertyName) {
-        // TODO
-        return null;
+    public @Nullable String getPropertyNamingMap(Class<? extends Annotation> targetType, String targetPropertyName) {
+        return namingMaps.getOrDefault(targetType, Collections.emptyMap()).get(targetPropertyName);
     }
 
     @Override
@@ -216,8 +299,6 @@ final class SimpleAnnotationMetadata<A extends Annotation> implements Annotation
         return "AnnotationMetadata(" +
                 "annotationType=" + annotationTypeName +
                 ", properties=" + propertyTypes +
-                // ", propertyDefaults=" + propertyDefaults +
-                // ", methods=" + methods +
                 ')';
     }
 }

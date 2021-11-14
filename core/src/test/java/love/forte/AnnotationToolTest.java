@@ -113,7 +113,7 @@ public class AnnotationToolTest {
 }
 
 @Target(ElementType.METHOD)
-// @Retention(RetentionPolicy.RUNTIME)
+@Retention(RetentionPolicy.RUNTIME)
 @AnnotationMapper(AnnotationMapper.Property.class)
 @Repeatable(ELes.class)
 @interface Ele {

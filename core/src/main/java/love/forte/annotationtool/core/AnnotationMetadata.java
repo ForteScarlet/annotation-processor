@@ -132,10 +132,10 @@ public interface AnnotationMetadata<A extends Annotation> {
      * @return properties.
      */
     @Unmodifiable
-    Map<String, Object> getProperties(@NotNull A annotation);
+    Map<String, Object> getProperties(@NotNull A annotation) throws ReflectiveOperationException;
 
     /**
-     * Get the property mappings for target type.
+     * Get the property mappings for target type. The key is <tt>targetType</tt>'s property name, value is current type's property.
      * @param targetType mappings target.
      * @return mappings
      */
@@ -146,11 +146,11 @@ public interface AnnotationMetadata<A extends Annotation> {
     /**
      * Get the property mapping for target type.
      * @param targetType mapping target.
-     * @param propertyName property name of current.
+     * @param targetPropertyName property name of current.
      * @return target name, or null.
      */
     @Nullable
-    String getPropertyNamingMap(Class<? extends Annotation> targetType, String propertyName);
+    String getPropertyNamingMap(Class<? extends Annotation> targetType, String targetPropertyName);
 
 
     /**

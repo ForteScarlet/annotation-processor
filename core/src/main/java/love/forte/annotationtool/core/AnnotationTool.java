@@ -85,7 +85,7 @@ public interface AnnotationTool {
      */
     @NotNull
     @Unmodifiable
-    Map<String, Object> getAnnotationValues(@NotNull Annotation annotation) throws ReflectiveOperationException;
+    <A extends Annotation> Map<String, Object> getAnnotationValues(@NotNull A annotation) throws ReflectiveOperationException;
 
     /**
      * Get annotation property names.
