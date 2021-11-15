@@ -1,4 +1,4 @@
-package examples.repeatableAnnotation;
+package examples.multipleAnnotation;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

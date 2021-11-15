@@ -1,4 +1,4 @@
-package examples.repeatableAnnotation;
+package examples.multipleAnnotation;
 
 import love.forte.annotationtool.core.AnnotationMapper;
 

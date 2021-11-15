@@ -176,36 +176,45 @@ public class AnnotationInvocationHandler implements InvocationHandler, Serializa
     }
 
     private boolean equalsImpl(Object other) {
+        if (other == null) {
+            return false;
+        }
+
         if (this == other) {
             return true;
-        } else if (!this.type.isInstance(other)) {
-            return false;
-        } else {
-            Method[] methods = this.getMemberMethods();
-
-            for (Method method : methods) {
-                String methodName = method.getName();
-                Object value = this.memberValues.get(methodName);
-                Object otherValue;
-                AnnotationInvocationHandler otherHandler = this.asOneOfUs(other);
-                if (otherHandler != null) {
-                    otherValue = otherHandler.memberValues.get(methodName);
-                } else {
-                    try {
-                        otherValue = method.invoke(other);
-                    } catch (InvocationTargetException var11) {
-                        return false;
-                    } catch (IllegalAccessException var12) {
-                        throw new AssertionError(var12);
-                    }
-                }
-
-                if (!memberValueEquals(value, otherValue)) {
-                    return false;
-                }
-            }
-            return true;
         }
+
+        if (!this.type.isInstance(other)) {
+            return false;
+        }
+        if (!(other instanceof Annotation)) {
+            return false;
+        }
+        final InvocationHandler handler = Proxy.getInvocationHandler(other);
+        if (handler instanceof AnnotationInvocationHandler) {
+            return ((AnnotationInvocationHandler) handler).memberValues.equals(this.memberValues);
+        }
+
+
+        Method[] methods = this.getMemberMethods();
+
+        for (Method method : methods) {
+            String methodName = method.getName();
+            Object value = this.memberValues.get(methodName);
+            Object otherValue;
+            try {
+                otherValue = method.invoke(other);
+            } catch (InvocationTargetException e1) {
+                return false;
+            } catch (IllegalAccessException e2) {
+                throw new AssertionError(e2);
+            }
+
+            if (!memberValueEquals(value, otherValue)) {
+                return false;
+            }
+        }
+        return true;
     }
 
 

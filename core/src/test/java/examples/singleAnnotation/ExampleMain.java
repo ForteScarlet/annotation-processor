@@ -11,7 +11,7 @@ import java.util.Collections;
  * @author ForteScarlet
  */
 @UserAccountName(name = "forte")
-public class TestMain {
+class ExampleMain {
 
     private static AnnotationTool tool;
 
@@ -22,7 +22,7 @@ public class TestMain {
 
     @Test
     public void test1() throws ReflectiveOperationException {
-        final Name name = tool.getAnnotation(TestMain.class, Name.class);
+        final Name name = tool.getAnnotation(ExampleMain.class, Name.class);
         assert name != null;
         assert name.value().equals("forte");
 

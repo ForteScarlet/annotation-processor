@@ -11,7 +11,7 @@ import java.util.Set;
 import java.util.function.Supplier;
 
 /**
- * {@link AnnotationTool}'s tool.
+ * {@link AnnotationTool} tool based on {@link SimpleAnnotationTool}.
  *
  * @author ForteScarlet
  */
@@ -27,6 +27,9 @@ public final class AnnotationTools {
     /**
      * Get Default annotation tool.
      * <p>
+     * By default, the resulting AnnotationTool will not have any type conversion of the parameters, but will be assigned directly.
+     * (That is, {@link AnnotationToolConfiguration#getConverters()} uses the {@link NonConverters}).
+     * <p>
      * Not thread safe.
      */
     public @NotNull
@@ -35,7 +38,7 @@ public final class AnnotationTools {
     }
 
     /**
-     * Get an {@link AnnotationTool} instance by config.
+     * Get an {@link SimpleAnnotationTool AnnotationTool} instance by config.
      * <p>
      * Not thread safe.
      *

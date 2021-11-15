@@ -1,4 +1,4 @@
-package examples.repeatableAnnotation;
+package examples.multipleAnnotation;
 
 import love.forte.annotationtool.core.AnnotationTool;
 import love.forte.annotationtool.core.AnnotationTools;
@@ -11,7 +11,7 @@ import java.util.List;
 /**
  * @author ForteScarlet
  */
-public class TestMain {
+class ExampleMain {
     private static AnnotationTool tool;
     private static Method test1;
     private static Method test2;
@@ -21,7 +21,7 @@ public class TestMain {
     @BeforeAll
     public static void before() throws NoSuchMethodException {
         tool = AnnotationTools.getAnnotationTool();
-        final Class<TestMain> testMainClass = TestMain.class;
+        final Class<ExampleMain> testMainClass = ExampleMain.class;
         test1 = testMainClass.getMethod("test1");
         test2 = testMainClass.getMethod("test2");
         test3 = testMainClass.getMethod("test3");

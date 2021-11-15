@@ -9,7 +9,6 @@ import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Proxy;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * This is the default implementation of the library for the {@link AnnotationTool} and is based on the {@link Proxy JDK Proxy} which implements the functionality required by the {@link AnnotationTool}.
@@ -110,37 +109,36 @@ class SimpleAnnotationTool implements AnnotationTool {
     }
 
 
-    private <A extends Annotation> @Nullable A getRepeatableAnnotation(AnnotatedElement fromElement, Class<A> annotationType, @Nullable Set<String> excludes) throws ReflectiveOperationException {
-        // TODO
-        return null;
-    }
+    // private <A extends Annotation> @Nullable A getRepeatableAnnotation(AnnotatedElement fromElement, Class<A> annotationType, @Nullable Set<String> excludes) throws ReflectiveOperationException {
+    //     // TODO
+    //     return null;
+    // }
 
 
-
-    @SuppressWarnings("unchecked")
-    @Nullable
-    private Class<? extends Annotation> getRepeatableChildType(Class<? extends Annotation> annotationType) {
-        final AnnotationMetadata<? extends Annotation> metadata = AnnotationMetadata.resolve(annotationType);
-        if (!metadata.isRepeatable()) {
-            return null;
-        }
-
-        final Class<?> valueType = metadata.getPropertyType("value");
-        if (valueType == null) {
-            return null;
-        }
-
-        Class<?> componentType;
-
-        if (valueType.isArray() && (componentType = valueType.getComponentType()).isAnnotation()) {
-            final Repeatable repeatableAnnotation = componentType.getAnnotation(Repeatable.class);
-            if (repeatableAnnotation != null && repeatableAnnotation.value().equals(annotationType)) {
-                return (Class<? extends Annotation>) componentType;
-            }
-        }
-
-        return null;
-    }
+    // @SuppressWarnings("unchecked")
+    // @Nullable
+    // private Class<? extends Annotation> getRepeatableChildType(Class<? extends Annotation> annotationType) {
+    //     final AnnotationMetadata<? extends Annotation> metadata = AnnotationMetadata.resolve(annotationType);
+    //     if (!metadata.isRepeatable()) {
+    //         return null;
+    //     }
+    //
+    //     final Class<?> valueType = metadata.getPropertyType("value");
+    //     if (valueType == null) {
+    //         return null;
+    //     }
+    //
+    //     Class<?> componentType;
+    //
+    //     if (valueType.isArray() && (componentType = valueType.getComponentType()).isAnnotation()) {
+    //         final Repeatable repeatableAnnotation = componentType.getAnnotation(Repeatable.class);
+    //         if (repeatableAnnotation != null && repeatableAnnotation.value().equals(annotationType)) {
+    //             return (Class<? extends Annotation>) componentType;
+    //         }
+    //     }
+    //
+    //     return null;
+    // }
 
     private <A extends Annotation> @Nullable A getAnnotationDirectly(AnnotatedElement fromElement, @NotNull Class<A> annotationType) throws ReflectiveOperationException {
         if (EXCLUDE_META_ANNOTATION.contains(annotationType.getName())) {
