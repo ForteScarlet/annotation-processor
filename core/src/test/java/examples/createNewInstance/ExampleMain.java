@@ -46,7 +46,6 @@ class ExampleMain {
 
         final Element nativeElement = ExampleMain.class.getAnnotation(Element.class);
         assert nativeElement.equals(annotationInstance3);
-
     }
 
 }
