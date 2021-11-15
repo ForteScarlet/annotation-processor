@@ -6,7 +6,7 @@
 
 ## 使用
 
-**核心模块：** [核心](core)
+- **核心模块：** [核心](core)
 
 ## 速览
 
@@ -44,3 +44,50 @@ AnnotationTool tool=AnnotationTools.getAnnotationTool();
         assert nativeElement.equals(annotationInstance3);
 }
 ```
+
+### 注解映射
+
+```java
+// Account.java
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.TYPE)
+public @interface Account {
+    String value();
+}
+
+// User.java
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.METHOD)
+@AnnotationMapper(Account.class)
+public @interface User {
+    @AnnotationMapper.Property(value = "value", target = Account.class)
+    String name();
+}
+
+// Bot.java
+@Target(ElementType.METHOD)
+@Retention(RetentionPolicy.RUNTIME)
+@AnnotationMapper(User.class)
+public @interface Bot {
+    @AnnotationMapper.Property(value = "name", target = User.class)
+    String nickname();
+}
+
+// Demo.java
+public class Demo {
+
+    @Bot(nickname = "ForteScarlet")
+    public static void main(String[] args) throws ReflectiveOperationException {
+        final Method main = Demo.class.getMethod("main", String[].class);
+
+        final AnnotationTool tool = AnnotationTools.getAnnotationTool();
+        final Account account = tool.getAnnotation(main, Account.class);
+        assert account != null;
+
+        System.out.println(account); // @Account(value="ForteScarlet")
+        System.out.println(account.value()); // ForteScarlet
+    }
+}
+```
+
+## [LICENSE](LICENSE)

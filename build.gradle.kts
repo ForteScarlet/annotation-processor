@@ -4,9 +4,6 @@ plugins {
     signing
     // see https://github.com/gradle-nexus/publish-plugin
     id("io.github.gradle-nexus.publish-plugin") version "1.1.0"
-
-    // id("io.codearte.nexus-staging") version "0.22.0" // apply false
-    // io.github.gradle-nexus.publish-plugin
 }
 
 buildscript {
@@ -84,9 +81,6 @@ nexusPublishing {
 
     repositories {
         sonatype {
-            // stagingProfileId.set(credentialsUsername)
-            // nexusUrl.set(uri(Sonatype.oss.URL))
-            // snapshotRepositoryUrl.set(uri(Sonatype.`snapshot-oss`.URL))
             username.set(credentialsUsername)
             password.set(credentialsPassword)
         }
