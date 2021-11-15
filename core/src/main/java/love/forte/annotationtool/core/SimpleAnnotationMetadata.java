@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2021 ForteScarlet <https://github.com/ForteScarlet>
+ *  Copyright (c) 2021-2021 ForteScarlet <https://github.com/ForteScarlet>
  *
  *  根据 Apache License 2.0 获得许可；
  *  除非遵守许可，否则您不得使用此文件。
@@ -21,9 +21,7 @@ import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Unmodifiable;
 
 import java.io.Serializable;
-import java.lang.annotation.Annotation;
-import java.lang.annotation.IncompleteAnnotationException;
-import java.lang.annotation.Repeatable;
+import java.lang.annotation.*;
 import java.lang.ref.WeakReference;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
@@ -40,8 +38,12 @@ final class SimpleAnnotationMetadata<A extends Annotation> implements Annotation
 
     private WeakReference<Class<A>> annotationType;
     private final String annotationTypeName;
-    private transient final boolean repeatable;
-    private transient final Class<?> repeatableAnnotationType;
+    private transient final WeakReference<Class<?>> repeatableAnnotationType;
+    private transient final String repeatableAnnotationTypeName;
+    private transient final RetentionPolicy retentionPolicy;
+    private transient final Set<ElementType> targets;
+    // repeatable-container | repeatable | deprecated | inherited | documented
+    private transient final byte marks;
 
     @SuppressWarnings({"FieldCanBeLocal", "unused"})
     private transient final Map<String, Class<?>> propertyTypes;
@@ -49,11 +51,19 @@ final class SimpleAnnotationMetadata<A extends Annotation> implements Annotation
     private transient final Map<String, Method> methods;
     private transient final Map<Class<? extends Annotation>, Map<String, String>> namingMaps;
 
-    public SimpleAnnotationMetadata(Class<A> annotationType) {
+    SimpleAnnotationMetadata(Class<A> annotationType) {
         this.annotationType = new WeakReference<>(annotationType);
         this.annotationTypeName = annotationType.getName();
-        boolean rpa = annotationType.isAnnotationPresent(Repeatable.class);
+        final Repeatable repeatable = annotationType.getAnnotation(Repeatable.class);
+        boolean rpa = repeatable != null;
+        boolean rpaCon = false;
+        Class<?> repeatableType = null;
+        if (repeatable != null) {
+            repeatableType = repeatable.value();
+        }
 
+        retentionPolicy = getRetentionPolicy0(annotationType);
+        this.targets = getTargets0(annotationType);
 
         final Method[] methods = annotationType.getMethods();
         this.methods = new LinkedHashMap<>(methods.length);
@@ -61,7 +71,7 @@ final class SimpleAnnotationMetadata<A extends Annotation> implements Annotation
         Map<String, Object> propertyDefaults = new LinkedHashMap<>();
         Map<Class<? extends Annotation>, Map<String, String>> namingMaps = new LinkedHashMap<>(methods.length);
 
-        Class<?> repeatableChildType = null;
+
 
         for (Method method : methods) {
             final String name = method.getName();
@@ -74,18 +84,19 @@ final class SimpleAnnotationMetadata<A extends Annotation> implements Annotation
                 continue;
             }
 
-
-            if (!rpa && "value".equals(name) && returnType.isArray()) {
-                // check repeatable
-                final Class<?> componentType = returnType.getComponentType();
-                if (componentType.isAnnotation()) {
-                    final Repeatable repeatableAnnotation = componentType.getAnnotation(Repeatable.class);
-                    if (repeatableAnnotation != null && repeatableAnnotation.value().equals(annotationType)) {
-                        repeatableChildType = componentType;
-                        rpa = true;
+            if (!rpa) {
+                if ("value".equals(name) && returnType.isArray()) {
+                    // check repeatable
+                    final Class<?> componentType = returnType.getComponentType();
+                    if (componentType.isAnnotation()) {
+                        final Repeatable repeatableAnnotation = componentType.getAnnotation(Repeatable.class);
+                        if (repeatableAnnotation != null && repeatableAnnotation.value().equals(annotationType)) {
+                            repeatableType = componentType;
+                            rpa = true;
+                            rpaCon = true;
+                        }
                     }
                 }
-
             }
 
 
@@ -110,47 +121,154 @@ final class SimpleAnnotationMetadata<A extends Annotation> implements Annotation
                 }
             }
 
-            final AnnotationMapper.Property[] properties = method.getAnnotationsByType(AnnotationMapper.Property.class);
-            if (properties != null && properties.length > 0) {
-                for (AnnotationMapper.Property property : properties) {
-                    Class<? extends Annotation> target = property.target();
-                    if (target == null) {
-                        if (defaultMapType != null) {
-                            target = defaultMapType;
-                        } else { // 无法确定属性的默认映射目标
-                            throw new IllegalStateException("Unable to determine the default mapping target of the property.");
-                        }
-                    }
-                    String targetName = property.value();
-                    namingMaps.computeIfAbsent(target, k -> new LinkedHashMap<>()).merge(targetName, name, (v1, v2) -> {
-                        throw new IllegalStateException("Duplicate mapping target: " + v1 + " -> " + targetName +" vs " + v2 + " -> " + targetName);
-                    });
-                }
+            // namingMap
+            resolveNamingMaps(method, defaultMapType, namingMaps);
+        }
 
+        this.repeatableAnnotationType = repeatableType == null ? null : new WeakReference<>(repeatableType);
+        this.repeatableAnnotationTypeName = repeatableType == null ? null : repeatableType.getName();
+        this.marks = getMarks0(annotationType, rpa, rpaCon);
+
+
+        this.propertyTypes = toUnmodifiable(propertyTypes);
+        this.propertyDefaults = toUnmodifiable(propertyDefaults);
+        this.namingMaps = toUnmodifiable(namingMaps);
+    }
+
+
+    //region Init functions
+    private static <K, V> Map<K, V> toUnmodifiable(Map<K, V> map) {
+        switch (map.size()) {
+            case 0:
+                return Collections.emptyMap();
+            case 1:
+                final Map.Entry<K, V> first = map.entrySet().iterator().next();
+                return Collections.singletonMap(first.getKey(), first.getValue());
+            default:
+                return map;
+        }
+    }
+
+    private static void resolveNamingMaps(Method method, Class<? extends Annotation> defaultMapType, Map<Class<? extends Annotation>, Map<String, String>> namingMaps) {
+        String name = method.getName();
+        final AnnotationMapper.Property[] properties = method.getAnnotationsByType(AnnotationMapper.Property.class);
+        if (properties != null && properties.length > 0) {
+            for (AnnotationMapper.Property property : properties) {
+                Class<? extends Annotation> target = property.target();
+                if (target == null) {
+                    if (defaultMapType != null) {
+                        target = defaultMapType;
+                    } else { // 无法确定属性的默认映射目标
+                        throw new IllegalStateException("Unable to determine the default mapping target of the property.");
+                    }
+                }
+                String targetName = property.value();
+                namingMaps.computeIfAbsent(target, k -> new LinkedHashMap<>()).merge(targetName, name, (v1, v2) -> {
+                    throw new IllegalStateException("Duplicate mapping target: " + v1 + " -> " + targetName + " vs " + v2 + " -> " + targetName);
+                });
             }
         }
-        this.repeatableAnnotationType = repeatableChildType;
-        repeatable = rpa;
+    }
 
-        if (propertyTypes.isEmpty()) {
-            this.propertyTypes = Collections.emptyMap();
+    private static RetentionPolicy getRetentionPolicy0(Class<? extends Annotation> annotationType) {
+        final Retention retention = annotationType.getAnnotation(Retention.class);
+        if (retention != null) {
+            return retention.value();
         } else {
-            this.propertyTypes = propertyTypes;
+            // the default value
+            return RetentionPolicy.CLASS;
         }
+    }
 
-        if (propertyDefaults.isEmpty()) {
-            this.propertyDefaults = Collections.emptyMap();
+
+    private static Set<ElementType> getTargets0(Class<? extends Annotation> annotationType) {
+        final Target targetAnnotation = annotationType.getAnnotation(Target.class);
+        Set<ElementType> targets;
+        if (targetAnnotation != null) {
+            final ElementType[] elements = targetAnnotation.value();
+            switch (elements.length) {
+                case 0:
+                    targets = Collections.emptySet();
+                    break;
+                case 1:
+                    targets = Collections.singleton(elements[0]);
+                    break;
+                default:
+                    targets = new HashSet<>(Arrays.asList(elements));
+            }
         } else {
-            this.propertyDefaults = propertyDefaults;
+            targets = Collections.emptySet();
         }
+        return targets;
+    }
 
-        if (namingMaps.isEmpty()) {
-            this.namingMaps = Collections.emptyMap();
-        } else {
-            this.namingMaps = namingMaps;
+    private static byte getMarks0(Class<? extends Annotation> annotationType, boolean repeatable, boolean repeatableContainer) {
+        byte marks = 0;
+        if (annotationType.isAnnotationPresent(Documented.class)) {
+            marks |= 1;
         }
+        if (annotationType.isAnnotationPresent(Inherited.class)) {
+            marks |= 2;
+        }
+        if (annotationType.isAnnotationPresent(Deprecated.class)) {
+            marks |= 4;
+        }
+        if (repeatable) {
+            marks |= 8;
+        }
+        if (repeatableContainer) {
+            marks |= 16;
+        }
+        return marks;
+    }
+    //endregion
 
 
+    @Override
+    public boolean isDocumented() {
+        return (marks & 1) != 0;
+    }
+
+    @Override
+    public boolean isInherited() {
+        return (marks & 2) != 0;
+    }
+
+    @Override
+    public boolean isDeprecated() {
+        return (marks & 4) != 0;
+    }
+
+    @Override
+    public boolean isRepeatable() {
+        return (marks & 8) != 0;
+    }
+
+    @Override
+    public boolean isRepeatableContainer() {
+        return (marks & 16) != 0;
+    }
+
+    @Override
+    public RetentionPolicy getRetention() {
+        return retentionPolicy;
+    }
+
+
+    @Override
+    public @Unmodifiable Set<ElementType> getTargets() {
+        switch (targets.size()) {
+            case 0:
+            case 1:
+                return targets;
+            default:
+                return new HashSet<>(targets);
+        }
+    }
+
+    @Override
+    public boolean containsTarget(ElementType type) {
+        return targets.contains(type);
     }
 
     @Nullable
@@ -171,14 +289,17 @@ final class SimpleAnnotationMetadata<A extends Annotation> implements Annotation
 
     }
 
-    @Override
-    public boolean isRepeatable() {
-        return repeatable;
-    }
 
     @Override
     public @Nullable Class<?> getRepeatableAnnotationType() {
-        return repeatableAnnotationType;
+        if (repeatableAnnotationType == null) {
+            return null;
+        }
+        final Class<?> type = repeatableAnnotationType.get();
+        if (type == null) {
+            throw new IllegalStateException(new ClassNotFoundException("annotation repeatable type class(" + repeatableAnnotationTypeName + ") has been recycled."));
+        }
+        return type;
     }
 
     @Override

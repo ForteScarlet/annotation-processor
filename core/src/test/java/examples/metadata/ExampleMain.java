@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2021 ForteScarlet <https://github.com/ForteScarlet>
+ *  Copyright (c) 2021-2021 ForteScarlet <https://github.com/ForteScarlet>
  *
  *  根据 Apache License 2.0 获得许可；
  *  除非遵守许可，否则您不得使用此文件。
@@ -48,4 +48,30 @@ class ExampleMain {
         assert names.equals(names0);
     }
 
+    @SuppressWarnings("deprecation")
+    @Test
+    public void test3() {
+        final AnnotationMetadata<?> metadata = AnnotationMetadata.resolve(OtherAnnotation.class);
+        assert metadata.isDeprecated();
+        assert metadata.isDocumented();
+        assert metadata.isInherited();
+        assert !metadata.isRepeatable();
+        assert !metadata.isRepeatableContainer();
+    }
+
+    @Test
+    public void test4() {
+        final AnnotationMetadata<?> elementMetadata = AnnotationMetadata.resolve(Element.class);
+        assert elementMetadata.isRepeatable();
+        assert !elementMetadata.isRepeatableContainer();
+
+        final AnnotationMetadata<?> elementsMetadata = AnnotationMetadata.resolve(Elements.class);
+        assert elementsMetadata.isRepeatable();
+        assert elementsMetadata.isRepeatableContainer();
+
+        assert Element.class.equals(elementsMetadata.getRepeatableAnnotationType());
+        assert Elements.class.equals(elementMetadata.getRepeatableAnnotationType());
+    }
+
 }
+

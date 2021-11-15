@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2021 ForteScarlet <https://github.com/ForteScarlet>
+ *  Copyright (c) 2021-2021 ForteScarlet <https://github.com/ForteScarlet>
  *
  *  根据 Apache License 2.0 获得许可；
  *  除非遵守许可，否则您不得使用此文件。
@@ -26,7 +26,7 @@ abstract class Dep(val groupId: String, val id: String, val version: String?) {
 
 object P {
     const val GROUP = "love.forte.annotation-tool"
-    const val VERSION = "0.5.0"
+    const val VERSION = "0.6.0"
     const val DESCRIPTION = "An exquisite annotation tool."
 }
 

@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2021 ForteScarlet <https://github.com/ForteScarlet>
+ *  Copyright (c) 2021-2021 ForteScarlet <https://github.com/ForteScarlet>
  *
  *  根据 Apache License 2.0 获得许可；
  *  除非遵守许可，否则您不得使用此文件。
@@ -169,6 +169,10 @@ class SimpleAnnotationTool implements AnnotationTool {
         // find cache
         final A cached = getCache(fromElement, annotationType);
         if (cached != null) return cached;
+
+        // if () {
+        //
+        // }
 
         // Try to get it directly.
         final A directly = fromElement.getAnnotation(annotationType);

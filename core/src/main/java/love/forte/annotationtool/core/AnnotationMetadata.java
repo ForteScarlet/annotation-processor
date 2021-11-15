@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2021 ForteScarlet <https://github.com/ForteScarlet>
+ *  Copyright (c) 2021-2021 ForteScarlet <https://github.com/ForteScarlet>
  *
  *  根据 Apache License 2.0 获得许可；
  *  除非遵守许可，否则您不得使用此文件。
@@ -21,7 +21,10 @@ import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Unmodifiable;
 
 import java.lang.annotation.Annotation;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.RetentionPolicy;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.WeakHashMap;
 
@@ -33,7 +36,9 @@ import java.util.WeakHashMap;
 @SuppressWarnings("unused")
 public interface AnnotationMetadata<A extends Annotation> {
     /**
-     * TODO 补充注释。
+     * An {@link AnnotationMetadataFactory} instance.
+     * <p>
+     * <i>In the future, it may be adjusted to obtain dynamic instances through Service Loader loading or other methods.</i>
      */
     AnnotationMetadataFactory FACTORY = new SimpleCacheableAnnotationMetadataFactory();
 
@@ -43,6 +48,56 @@ public interface AnnotationMetadata<A extends Annotation> {
      * @return annotation type
      */
     Class<A> getAnnotationType();
+
+
+    /**
+     * Get {@link RetentionPolicy} of this annotation.
+     *
+     * @return {@link RetentionPolicy}
+     * @see java.lang.annotation.Retention
+     */
+    RetentionPolicy getRetention();
+
+    /**
+     * Get Set<{@link ElementType}> of this annotation.
+     *
+     * @return Unmodifiable element types.
+     * @see java.lang.annotation.Target
+     */
+    @Unmodifiable
+    Set<ElementType> getTargets();
+
+
+    /**
+     * Detect whether there is a target type.
+     *
+     * @param type type
+     * @return true if contains.
+     */
+    boolean containsTarget(ElementType type);
+
+    /**
+     * Check if {@link java.lang.annotation.Documented} is marked.
+     *
+     * @return True if marked {@link java.lang.annotation.Documented}
+     */
+    boolean isDocumented();
+
+
+    /**
+     * Check if {@link java.lang.annotation.Inherited} is marked.
+     *
+     * @return True if marked {@link java.lang.annotation.Inherited}
+     */
+    boolean isInherited();
+
+    /**
+     * Check if {@link java.lang.Deprecated} is marked.
+     *
+     * @return True if marked {@link java.lang.Deprecated}
+     */
+    boolean isDeprecated();
+
 
     /**
      * Is a repeatable annotation.
@@ -81,6 +136,12 @@ public interface AnnotationMetadata<A extends Annotation> {
      * @return repeatable if true.
      */
     boolean isRepeatable();
+
+    /**
+     * From the example of {@link #isRepeatable()}, if the annotation is <tt>Elements<tt>, return true.
+     * @return True if the current type is a container in a repeatable annotation.
+     */
+    boolean isRepeatableContainer();
 
     /**
      * if {@link #isRepeatable()} return true, this will get the type of repeatable child, or the type of repeat <tt>value</tt>.
@@ -152,6 +213,7 @@ public interface AnnotationMetadata<A extends Annotation> {
 
     /**
      * Get the property mappings for target type. The key is <tt>targetType</tt>'s property name, value is current type's property.
+     *
      * @param targetType mappings target.
      * @return mappings
      */
@@ -161,7 +223,8 @@ public interface AnnotationMetadata<A extends Annotation> {
 
     /**
      * Get the property mapping for target type.
-     * @param targetType mapping target.
+     *
+     * @param targetType         mapping target.
      * @param targetPropertyName property name of current.
      * @return target name, or null.
      */
@@ -179,7 +242,6 @@ public interface AnnotationMetadata<A extends Annotation> {
      */
     @Nullable
     Object getAnnotationValue(@NotNull String property, @NotNull Annotation annotation) throws ReflectiveOperationException;
-
 
 
     /**
