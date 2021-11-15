@@ -1,19 +1,16 @@
+@file:Suppress("NOTHING_TO_INLINE")
 
+import org.gradle.api.Action
 import org.gradle.api.Project
-import org.gradle.api.*
+import org.gradle.api.plugins.ExtensionAware
+import org.gradle.api.publish.PublishingExtension
 import org.gradle.api.publish.maven.MavenPublication
+import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.api.tasks.bundling.Jar
 import org.gradle.kotlin.dsl.*
 
 
-
-inline fun Project.configurePublishing(
-    artifactId: String,
-    vcs: String = "https://github.com/ForteScarlet/annotation-tool",
-) {
-    // configureRemoteRepos()
-    // apply<ShadowPlugin>()
-
+inline fun Project.configurePublishing(artifactId: String) {
 
     val sourcesJar by tasks.registering(Jar::class) {
         archiveClassifier.set("sources")
@@ -34,10 +31,7 @@ inline fun Project.configurePublishing(
                 setArtifactId(artifactId)
                 version = project.version.toString()
 
-                setupPom(
-                    project = project,
-                    vcs = vcs
-                )
+                setupPom(project = project)
 
                 artifact(sourcesJar)
                 artifact(javadocJar.get())
@@ -48,11 +42,11 @@ inline fun Project.configurePublishing(
             maven {
                 if (version.toString().endsWith("SNAPSHOTS", true)) {
                     // snapshot
-                    name = "snapshots-oss"
-                    url = uri("https://oss.sonatype.org/content/repositories/snapshots/")
+                    name = Sonatype.`snapshot-oss`.NAME
+                    url = uri(Sonatype.`snapshot-oss`.URL)
                 } else {
-                    name = "oss"
-                    url = uri("https://oss.sonatype.org/service/local/staging/deploy/maven2/")
+                    name = Sonatype.oss.NAME
+                    url = uri(Sonatype.oss.URL)
                 }
                 credentials {
                     username = project.extra.properties["sonatype.username"]?.toString()
@@ -63,20 +57,23 @@ inline fun Project.configurePublishing(
             }
         }
 
-        // configGpgSign(this@configurePublishing)
     }
+
 }
 
 
-fun MavenPublication.setupPom(
-    project: Project,
-    vcs: String = "https://github.com/ForteScarlet/annotation-tool"
-) {
+fun MavenPublication.setupPom(project: Project) {
+    val vcs = "https://github.com/ForteScarlet/annotation-tool"
     pom {
         scm {
             url.set(vcs)
             connection.set("scm:$vcs.git")
             developerConnection.set("scm:${vcs.replace("https:", "git:")}.git")
+        }
+
+        issueManagement {
+            system.set("GitHub Issue Management")
+            url.set("$vcs/issues")
         }
 
         licenses {
@@ -94,12 +91,23 @@ fun MavenPublication.setupPom(
             }
         }
 
+        withXml {
+            val root = asNode()
+            root.appendNode("description", project.description)
+            root.appendNode("name", project.name)
+            root.appendNode("url", vcs)
+        }
+
     }
 
-    pom.withXml {
-        val root = asNode()
-        root.appendNode("description", project.description)
-        root.appendNode("name", project.name)
-        root.appendNode("url", vcs)
-    }
 }
+
+
+inline val Project.sourceSets: SourceSetContainer
+    get() = extensions.getByName("sourceSets") as SourceSetContainer
+
+
+fun Project.publishing(configure: PublishingExtension.() -> Unit) {
+    (this as ExtensionAware).extensions.configure("publishing", configure)
+}
+

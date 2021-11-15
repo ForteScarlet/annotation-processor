@@ -1,21 +1,39 @@
 plugins {
-    java
-    id("maven-publish")
-    id("signing")
-    id("io.codearte.nexus-staging") version "0.22.0" apply false
+    `java-library`
+    `maven-publish`
+    signing
+    // see https://github.com/gradle-nexus/publish-plugin
+    id("io.github.gradle-nexus.publish-plugin") version "1.1.0"
 
+    // id("io.codearte.nexus-staging") version "0.22.0" // apply false
+    // io.github.gradle-nexus.publish-plugin
 }
 
-group = P.GROUP // "love.forte.annotationTool"
-version = P.VERSION // "0.5.0"
+buildscript {
+    repositories {
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
 
-repositories {
+group = P.GROUP
+version = P.VERSION
+description = P.DESCRIPTION
+
+    repositories {
     mavenLocal()
     mavenCentral()
+    gradlePluginPortal()
 }
 
 val credentialsUsernameKey = "sonatype.username"
 val credentialsPasswordKey = "sonatype.password"
+val secretKeyRingFileKey = "signing.secretKeyRingFile"
+
+// set gpg file path to root
+val secretKeyRingFile = extra.properties[secretKeyRingFileKey]!!.toString()
+val secretRingFile = File(project.rootDir, secretKeyRingFile)
+extra[secretKeyRingFileKey] = secretRingFile
 
 
 subprojects {
@@ -28,6 +46,9 @@ subprojects {
         mavenCentral()
     }
 
+    group = P.GROUP
+    version = P.VERSION
+    description = P.DESCRIPTION + " - $name module"
 
     dependencies {
         testImplementation(V.Jupiter.Api.NOTATION)
@@ -41,9 +62,36 @@ subprojects {
     }
 
     configurePublishing(name)
+    println("[publishing-configure] - [$name] configured.")
+    setProperty(secretKeyRingFileKey, secretRingFile)
 
     signing {
         sign(publishing.publications)
     }
 }
+
+
+
+
+// nexus staging
+
+val credentialsUsername: String = extra.properties[credentialsUsernameKey]!!.toString()
+val credentialsPassword: String = extra.properties[credentialsPasswordKey]!!.toString()
+
+
+nexusPublishing {
+    packageGroup.set(P.GROUP)
+
+    repositories {
+        sonatype {
+            // stagingProfileId.set(credentialsUsername)
+            // nexusUrl.set(uri(Sonatype.oss.URL))
+            // snapshotRepositoryUrl.set(uri(Sonatype.`snapshot-oss`.URL))
+            username.set(credentialsUsername)
+            password.set(credentialsPassword)
+        }
+
+    }
+}
+
 
