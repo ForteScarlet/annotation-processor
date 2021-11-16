@@ -10,7 +10,7 @@ This is a tool library serving annotations, a small and cute library.
 - **core module**:  [core](core)
 
 ## Guide
-[手册](guide/cn) | ~~{Guide}(guide/en)~~
+[手册](guide/cn) | [~~Guide~~](guide/en)
 
 ## Quick Facts
 
