@@ -25,8 +25,6 @@ import java.lang.annotation.Annotation;
 import java.lang.annotation.AnnotationFormatError;
 import java.lang.annotation.IncompleteAnnotationException;
 import java.lang.reflect.*;
-import java.security.AccessController;
-import java.security.PrivilegedAction;
 import java.util.*;
 
 /**
@@ -246,12 +244,11 @@ public class AnnotationInvocationHandler implements InvocationHandler, Serializa
 
     private Method[] getMemberMethods() {
         if (this.memberMethods == null) {
-            this.memberMethods = AccessController.doPrivileged((PrivilegedAction<Method[]>) () -> {
-                Method[] methods = type.getDeclaredMethods();
-                validateAnnotationMethods(methods);
-                AccessibleObject.setAccessible(methods, true);
-                return methods;
-            });
+            Method[] methods = type.getDeclaredMethods();
+            validateAnnotationMethods(methods);
+            AccessibleObject.setAccessible(methods, true);
+            this.memberMethods = methods;
+            // this.memberMethods = AccessController.doPrivileged((PrivilegedAction<Method[]>) () -> {
         }
 
         return this.memberMethods;
