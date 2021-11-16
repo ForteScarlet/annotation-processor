@@ -9,7 +9,7 @@
 - **核心模块：** [核心](core)
 
 ## 手册
-[手册](guide/cn) | ~~{Guide}(guide/en)~~
+[手册](guide/cn) | [~~Guide~~](guide/en)
 
 ## 速览
 
