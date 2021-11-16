@@ -26,8 +26,10 @@ import java.lang.annotation.Target;
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
-public @interface Element {
+@interface Element {
     String value();
+
     String name() default "forte";
+
     int size();
 }

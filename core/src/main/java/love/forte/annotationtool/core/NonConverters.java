@@ -19,6 +19,8 @@ package love.forte.annotationtool.core;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -27,8 +29,24 @@ import java.util.Objects;
  * @author ForteScarlet
  */
 public final class NonConverters implements Converters {
-    private NonConverters(){}
+    private NonConverters() {
+    }
+
     public static final NonConverters INSTANCE = new NonConverters();
+    private static final Map<Class<?>, Class<?>> primitiveToBox;
+
+    static {
+        primitiveToBox = new HashMap<>();
+        primitiveToBox.put(byte.class, Byte.class);
+        primitiveToBox.put(short.class, Short.class);
+        primitiveToBox.put(int.class, Integer.class);
+        primitiveToBox.put(long.class, Long.class);
+        primitiveToBox.put(double.class, Double.class);
+        primitiveToBox.put(float.class, Float.class);
+        primitiveToBox.put(char.class, Character.class);
+        primitiveToBox.put(boolean.class, Boolean.class);
+    }
+
 
     /**
      * when the types are the same will the conversion be carried out.
@@ -49,7 +67,21 @@ public final class NonConverters implements Converters {
             return (TO) instance;
         }
 
-        throw new ConvertException("NonConverters Only when the types are the same will the conversion be carried out, But " + from + " is not a subtype of " + to);
+        if (to.isPrimitive()) {
+            final Class<?> toBoxType = primitiveToBox.get(to);
+            if (toBoxType.isAssignableFrom(from)) {
+                return (TO) instance;
+            }
+        }
+
+        if (from.isPrimitive()) {
+            final Class<?> fromBoxType = primitiveToBox.get(from);
+            if (to.isAssignableFrom(fromBoxType)) {
+                return (TO) instance;
+            }
+        }
+
+        throw new ConvertException("NonConverters only support when the types are the same will the conversion be carried out, But " + from + " is not a subtype of " + to);
     }
 
 }

@@ -23,13 +23,15 @@ import java.lang.annotation.Target;
 
 /**
  * Hi.
+ *
  * @author ForteScarlet
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
-public @interface IAmAnnotation {
+@interface IAmAnnotation {
 
     String value();
+
     int size();
 
 }

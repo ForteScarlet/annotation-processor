@@ -29,7 +29,7 @@ import java.lang.annotation.Target;
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
 @AnnotationMapper(Element.class)
-public @interface MyElement {
+@interface MyElement {
 
     @AnnotationMapper.Property(value = "value", target = Element.class)
     String name();

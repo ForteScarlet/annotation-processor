@@ -38,7 +38,7 @@ final class SimpleAnnotationMetadata<A extends Annotation> implements Annotation
 
     private WeakReference<Class<A>> annotationType;
     private final String annotationTypeName;
-    private transient final WeakReference<Class<?>> repeatableAnnotationType;
+    private transient final WeakReference<Class<? extends Annotation>> repeatableAnnotationType;
     private transient final String repeatableAnnotationTypeName;
     private transient final RetentionPolicy retentionPolicy;
     private transient final Set<ElementType> targets;
@@ -57,7 +57,7 @@ final class SimpleAnnotationMetadata<A extends Annotation> implements Annotation
         final Repeatable repeatable = annotationType.getAnnotation(Repeatable.class);
         boolean rpa = repeatable != null;
         boolean rpaCon = false;
-        Class<?> repeatableType = null;
+        Class<? extends Annotation> repeatableType = null;
         if (repeatable != null) {
             repeatableType = repeatable.value();
         }
@@ -91,7 +91,7 @@ final class SimpleAnnotationMetadata<A extends Annotation> implements Annotation
                     if (componentType.isAnnotation()) {
                         final Repeatable repeatableAnnotation = componentType.getAnnotation(Repeatable.class);
                         if (repeatableAnnotation != null && repeatableAnnotation.value().equals(annotationType)) {
-                            repeatableType = componentType;
+                            repeatableType = (Class<? extends Annotation>) componentType;
                             rpa = true;
                             rpaCon = true;
                         }
@@ -291,11 +291,11 @@ final class SimpleAnnotationMetadata<A extends Annotation> implements Annotation
 
 
     @Override
-    public @Nullable Class<?> getRepeatableAnnotationType() {
+    public @Nullable Class<? extends Annotation> getRepeatableAnnotationType() {
         if (repeatableAnnotationType == null) {
             return null;
         }
-        final Class<?> type = repeatableAnnotationType.get();
+        final Class<? extends Annotation> type = repeatableAnnotationType.get();
         if (type == null) {
             throw new IllegalStateException(new ClassNotFoundException("annotation repeatable type class(" + repeatableAnnotationTypeName + ") has been recycled."));
         }

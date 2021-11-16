@@ -29,7 +29,7 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.ANNOTATION_TYPE, ElementType.TYPE})
 @AnnotationMapper(Name.class)
-public @interface AccountName {
+@interface AccountName {
 
     @AnnotationMapper.Property("value")
     String myName();

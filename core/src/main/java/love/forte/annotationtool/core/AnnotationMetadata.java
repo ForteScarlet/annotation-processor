@@ -148,7 +148,7 @@ public interface AnnotationMetadata<A extends Annotation> {
      * @return type of repeatable, or null.
      */
     @Nullable
-    Class<?> getRepeatableAnnotationType();
+    Class<? extends Annotation> getRepeatableAnnotationType();
 
 
     /**

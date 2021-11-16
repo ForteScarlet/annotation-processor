@@ -25,4 +25,5 @@ import java.lang.annotation.RetentionPolicy;
 @Documented
 @Deprecated
 @Retention(RetentionPolicy.CLASS)
-@interface OtherAnnotation {}
+@interface OtherAnnotation {
+}

@@ -22,6 +22,7 @@ import org.jetbrains.annotations.Nullable;
 import java.lang.annotation.Annotation;
 import java.lang.annotation.Repeatable;
 import java.lang.reflect.AnnotatedElement;
+import java.lang.reflect.Array;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Proxy;
 import java.util.*;
@@ -170,17 +171,35 @@ class SimpleAnnotationTool implements AnnotationTool {
         final A cached = getCache(fromElement, annotationType);
         if (cached != null) return cached;
 
-        // if () {
-        //
-        // }
-
         // Try to get it directly.
         final A directly = fromElement.getAnnotation(annotationType);
         if (directly != null) {
-            // proxy, cache, and return
-            final A resultAnnotation = checkAnnotationProxy(directly);
-            saveCache(fromElement, resultAnnotation);
-            return resultAnnotation;
+            final AnnotationMetadata<A> metadata = AnnotationMetadata.resolve(annotationType);
+            if (metadata.isRepeatableContainer()) {
+                // container
+                final Class<? extends Annotation> repeatableAnnotationType = metadata.getRepeatableAnnotationType();
+                final List<? extends Annotation> children = getAnnotations(fromElement, repeatableAnnotationType);
+                final Map<String, Object> properties = new HashMap<>(metadata.getProperties(directly));
+                final Object value = properties.get("value");
+
+                Class<?> valueClass;
+                if (!children.isEmpty() && value != null && (valueClass = value.getClass()).isArray() && valueClass.getComponentType().equals(repeatableAnnotationType)) {
+                    final int size = children.size();
+                    Object newArray = Array.newInstance(repeatableAnnotationType, size);
+                    for (int i = 0; i < size; i++) {
+                        Array.set(newArray, i, children.get(i));
+                    }
+                    properties.put("value", newArray);
+                }
+                final A proxiedAnnotation = proxy(annotationType, annotationType.getClassLoader(), directly, properties);
+                saveCache(fromElement, proxiedAnnotation);
+                return proxiedAnnotation;
+            } else {
+                // not a repeatable container
+                final A resultAnnotation = checkAnnotationProxy(directly);
+                saveCache(fromElement, resultAnnotation);
+                return resultAnnotation;
+            }
         }
 
         return null;
