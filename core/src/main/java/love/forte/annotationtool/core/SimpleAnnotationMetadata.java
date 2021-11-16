@@ -51,6 +51,7 @@ final class SimpleAnnotationMetadata<A extends Annotation> implements Annotation
     private transient final Map<String, Method> methods;
     private transient final Map<Class<? extends Annotation>, Map<String, String>> namingMaps;
 
+    @SuppressWarnings("unchecked")
     SimpleAnnotationMetadata(Class<A> annotationType) {
         this.annotationType = new WeakReference<>(annotationType);
         this.annotationTypeName = annotationType.getName();
