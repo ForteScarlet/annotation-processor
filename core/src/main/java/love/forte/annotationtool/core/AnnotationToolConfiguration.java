@@ -22,7 +22,6 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- *
  * Config for {@link SimpleAnnotationTool}.
  *
  * @author ForteScarlet
@@ -30,7 +29,6 @@ import java.util.Set;
 public class AnnotationToolConfiguration {
     private Map<AnnotatedElement, Map<Class<? extends Annotation>, Annotation>> cacheMap;
     private Map<AnnotatedElement, Set<Class<? extends Annotation>>> nullCacheMap;
-    private boolean mixAllRepeatable; // TODO?
     private Converters converters;
 
 
@@ -48,14 +46,6 @@ public class AnnotationToolConfiguration {
 
     public void setNullCacheMap(Map<AnnotatedElement, Set<Class<? extends Annotation>>> nullCacheMap) {
         this.nullCacheMap = nullCacheMap;
-    }
-
-    public boolean isMixAllRepeatable() {
-        return mixAllRepeatable;
-    }
-
-    public void setMixAllRepeatable(boolean mixAllRepeatable) {
-        this.mixAllRepeatable = mixAllRepeatable;
     }
 
     public Converters getConverters() {

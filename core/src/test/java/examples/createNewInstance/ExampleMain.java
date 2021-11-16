@@ -18,7 +18,6 @@ package examples.createNewInstance;
 
 import love.forte.annotationtool.core.AnnotationTool;
 import love.forte.annotationtool.core.AnnotationTools;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
@@ -29,13 +28,8 @@ import java.util.Map;
  */
 @Element(value = "Hello World", size = 15)
 class ExampleMain {
-    private static AnnotationTool tool;
+    private static final AnnotationTool tool = AnnotationTools.getAnnotationTool();
 
-
-    @BeforeAll
-    public static void before() {
-        tool = AnnotationTools.getAnnotationTool();
-    }
 
     @Test
     public void test1() throws ReflectiveOperationException {
