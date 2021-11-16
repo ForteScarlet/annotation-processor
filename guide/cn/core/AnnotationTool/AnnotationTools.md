@@ -50,13 +50,13 @@ AnnotationTool tool=AnnotationTools.getAnnotationTool();
 ```java
 final AnnotationToolConfiguration config=new AnnotationToolConfiguration();
 // 可以实现Converters，来自定义转化器
-        config.setConverters(Converters.nonConverters());
+config.setConverters(Converters.nonConverters());
 
 // 设置一个缓存器，需要是可变Map
-        config.setCacheMap(new HashMap<>());
+config.setCacheMap(new HashMap<>());
 
 // 设置一个空值缓存器，需要是可变Map
-        /config.setNullCacheMap(new LinkedHashMap<>());
+config.setNullCacheMap(new LinkedHashMap<>());
 
 // 根据配置得到实例。
 final AnnotationTool tool=AnnotationTools.getAnnotationTool(config);
