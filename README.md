@@ -1,4 +1,7 @@
 # Annotation-Tool
+<a href="https://repo1.maven.org/maven2/love/forte/annotation-tool/core" target="_blank">
+      <img alt="release" src="https://img.shields.io/nexus/r/love.forte.annotation-tool/core?label=repo1-lastVersion&server=https%3A%2F%2Foss.sonatype.org" />
+    </a>
 
 [中文](README_CN.md) | English
 
@@ -11,6 +14,9 @@ This is a tool library serving annotations, a small and cute library.
 
 ## Guide
 [手册](guide/cn) | [~~Guide~~](guide/en)
+
+## Examples
+See [core module tests](core/src/test)
 
 ## Quick Facts
 

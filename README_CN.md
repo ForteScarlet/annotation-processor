@@ -1,4 +1,7 @@
 # Annotation-Tool
+<a href="https://repo1.maven.org/maven2/love/forte/annotation-tool/core" target="_blank">
+      <img alt="release" src="https://img.shields.io/nexus/r/love.forte.annotation-tool/core?label=repo1-lastVersion&server=https%3A%2F%2Foss.sonatype.org" />
+    </a>
 
 中文 | [English](README.md)
 
