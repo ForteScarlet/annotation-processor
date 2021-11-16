@@ -9,15 +9,20 @@ This is a tool library serving annotations, a small and cute library.
 ## use
 - **core module**:  [core](core)
 
-## 速览
+## Guide
+[手册](guide/cn) | ~~{Guide}(guide/en)~~
 
-首先，你需要得到一个 `AnnotationTool` 实例：
+## Quick Facts
+
+First, you need to get an instance of `AnnotationTool`:
 
 ```java
 AnnotationTool tool=AnnotationTools.getAnnotationTool();
 ```
 
-### 创建注解实例
+Then, use it.
+
+### Creating annotation instances
 
 ```java
     public void test1()throws ReflectiveOperationException {
@@ -46,7 +51,7 @@ AnnotationTool tool=AnnotationTools.getAnnotationTool();
 }
 ```
 
-### 注解映射
+### Annotation mapping
 
 ```java
 // Account.java
