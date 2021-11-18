@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2021 ForteScarlet <https://github.com/ForteScarlet>
+ *  Copyright (c) 2021-2021 ForteScarlet <https://github.com/ForteScarlet>
  *
  *  根据 Apache License 2.0 获得许可；
  *  除非遵守许可，否则您不得使用此文件。
@@ -7,16 +7,11 @@
  *
  *       https://www.apache.org/licenses/LICENSE-2.0
  *
- *   除非适用法律要求或书面同意，根据许可证分发的软件
- *   许可证下分发的软件是以 "原样" 为基础的。
- *   没有任何形式的保证或条件，无论是明示还是暗示。
  *   有关许可证下的权限和限制的具体语言，请参见许可证。
- *   许可证下的权限和限制。
  */
 
 @file:Suppress("NOTHING_TO_INLINE")
 
-import org.gradle.api.Action
 import org.gradle.api.Project
 import org.gradle.api.plugins.ExtensionAware
 import org.gradle.api.publish.PublishingExtension
