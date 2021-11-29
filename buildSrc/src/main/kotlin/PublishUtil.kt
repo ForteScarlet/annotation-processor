@@ -16,7 +16,6 @@
 
 @file:Suppress("NOTHING_TO_INLINE")
 
-import org.gradle.api.Action
 import org.gradle.api.Project
 import org.gradle.api.plugins.ExtensionAware
 import org.gradle.api.publish.PublishingExtension
