@@ -92,7 +92,8 @@ internal class SimpleKAnnotationTool(
     }
 
     override fun clearCache() {
-        TODO("Not yet implemented")
+        cacheMap.clear()
+        nullCacheMap.clear()
     }
 }
 
