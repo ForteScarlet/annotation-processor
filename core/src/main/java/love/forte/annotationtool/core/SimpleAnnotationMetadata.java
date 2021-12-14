@@ -12,6 +12,7 @@
 
 package love.forte.annotationtool.core;
 
+import love.forte.annotationtool.AnnotationMapper;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Unmodifiable;

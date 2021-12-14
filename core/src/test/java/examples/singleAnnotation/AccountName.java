@@ -12,7 +12,8 @@
 
 package examples.singleAnnotation;
 
-import love.forte.annotationtool.core.AnnotationMapper;
+
+import love.forte.annotationtool.AnnotationMapper;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

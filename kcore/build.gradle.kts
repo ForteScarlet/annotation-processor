@@ -15,11 +15,24 @@ plugins {
     kotlin("jvm") version "1.6.0"
 }
 
+kotlin {
+    explicitApiWarning()
+
+    sourceSets.all {
+        languageSettings {
+            optIn("kotlin.RequiresOptIn")
+        }
+    }
+
+}
+
 dependencies {
     api(project(":api"))
+    api(kotlin("reflect"))
+
+
     testImplementation(V.Jupiter.Api.NOTATION)
     testRuntimeOnly(V.Jupiter.Engine.NOTATION)
-    compileOnly(V.Jetbrains.Annotations.NOTATION)
     testCompileOnly(V.Jetbrains.Annotations.NOTATION)
     testImplementation("cn.hutool:hutool-core:5.7.16")
 }
