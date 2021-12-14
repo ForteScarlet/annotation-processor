@@ -10,7 +10,7 @@
  *   有关许可证下的权限和限制的具体语言，请参见许可证。
  */
 
-package love.forte.annotationtool.core;
+package love.forte.annotationtool.annotation;
 
 import java.lang.annotation.*;
 

@@ -11,7 +11,7 @@
  */
 
 plugins {
-    `java-library`
+    // `java-library`
     `maven-publish`
     signing
     // see https://github.com/gradle-nexus/publish-plugin
@@ -46,7 +46,7 @@ extra[secretKeyRingFileKey] = secretRingFile
 
 
 subprojects {
-    apply(plugin = "java")
+    apply(plugin = "java-library")
     apply(plugin = "maven-publish")
     apply(plugin = "signing")
 
@@ -59,12 +59,6 @@ subprojects {
     version = P.VERSION
     description = P.DESCRIPTION + " - $name module"
 
-    dependencies {
-        testImplementation(V.Jupiter.Api.NOTATION)
-        testRuntimeOnly(V.Jupiter.Engine.NOTATION)
-        compileOnly(V.Jetbrains.Annotations.NOTATION)
-        testCompileOnly(V.Jetbrains.Annotations.NOTATION)
-    }
 
     tasks.getByName<Test>("test") {
         useJUnitPlatform()

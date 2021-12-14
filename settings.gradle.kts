@@ -11,4 +11,6 @@
  */
 
 rootProject.name = "annotationTool"
+include("api")
 include("core")
+include("kcore")
