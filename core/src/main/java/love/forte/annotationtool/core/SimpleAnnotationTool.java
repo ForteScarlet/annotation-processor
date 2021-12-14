@@ -58,6 +58,12 @@ class SimpleAnnotationTool implements AnnotationTool {
         set.add("kotlin.annotation.MustBeDocumented");
         set.add("kotlin.annotation.Repeatable");
 
+        // javax.inject meta-annotation
+        set.add("javax.inject.Qualifier");
+
+        // spring
+        set.add("org.springframework.core.annotation.AliasFor");
+
         // this lib's meta-annotation
         set.add(AnnotationMapper.class.getName());
         set.add(AnnotationMapper.Properties.class.getName());
@@ -109,7 +115,7 @@ class SimpleAnnotationTool implements AnnotationTool {
                 continue;
             }
 
-            final A deepAnnotation = getAnnotationFromAnnotation(annotation, fromElement, annotationType, currentExcludes);
+            final A deepAnnotation = getAnnotationFromAnnotation(annotation, annotation.annotationType(), annotationType, currentExcludes);
             if (deepAnnotation != null) {
                 final A deepAnnotationProxy = checkAnnotationProxy(deepAnnotation);
                 saveCache(fromElement, deepAnnotationProxy);
@@ -233,8 +239,9 @@ class SimpleAnnotationTool implements AnnotationTool {
             return tryMappedAnnotation;
         }
 
-
-        return getAnnotation(fromInstance.annotationType(), annotationType, excludes);
+        final Set<String> newExcludes = resolveExclude(excludes);
+        newExcludes.add(fromInstance.annotationType().getName());
+        return getAnnotation(fromInstance.annotationType(), annotationType, newExcludes);
     }
 
 
@@ -473,7 +480,7 @@ class SimpleAnnotationTool implements AnnotationTool {
      */
     private <F extends Annotation, T extends Annotation> T mapping(F sourceAnnotation, Class<? extends Annotation> sourceAnnotationType, Class<T> targetType) throws ReflectiveOperationException {
         // final Class<? extends Annotation> sourceAnnotationType = sourceAnnotation.annotationType();
-        final AnnotationMapper sourceAnnotationMapper = getAnnotation(sourceAnnotationType, AnnotationMapper.class);
+        final AnnotationMapper sourceAnnotationMapper = sourceAnnotationType.getAnnotation(AnnotationMapper.class);
 
         // can not map
         if (sourceAnnotationMapper == null) {
