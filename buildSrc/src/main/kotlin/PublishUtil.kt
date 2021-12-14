@@ -54,6 +54,7 @@ inline fun Project.configurePublishing(artifactId: String) {
         }
 
         repositories {
+            mavenLocal()
             maven {
                 if (version.toString().endsWith("SNAPSHOTS", true)) {
                     // snapshot

@@ -33,7 +33,7 @@ group = P.GROUP
 version = P.VERSION
 description = P.DESCRIPTION
 
-    repositories {
+repositories {
     mavenLocal()
     mavenCentral()
     gradlePluginPortal()
