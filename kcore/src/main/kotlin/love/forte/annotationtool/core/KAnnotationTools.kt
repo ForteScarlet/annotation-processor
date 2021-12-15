@@ -20,3 +20,28 @@ public fun KAnnotationTool(
 ): KAnnotationTool = SimpleKAnnotationTool(cacheMap, nullCacheMap, converters)
 
 
+public inline fun <reified A : Annotation> KAnnotationTool.getAnnotation(
+    element: KAnnotatedElement,
+    exclude: Set<String> = emptySet()
+): A? {
+    return getAnnotation(element, A::class, exclude)
+}
+
+public inline fun <reified A : Annotation> KAnnotationTool.getAnnotations(
+    element: KAnnotatedElement,
+    exclude: Set<String> = emptySet()
+): List<A> {
+    return getAnnotations(element, A::class, exclude)
+}
+
+public inline fun <reified A : Annotation> KAnnotationTool.createAnnotation(
+    properties: Map<String, Any> = emptyMap(),
+    base: A? = null
+): A {
+    return createAnnotationInstance(A::class, properties, base)
+}
+
+
+
+
+

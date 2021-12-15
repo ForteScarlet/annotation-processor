@@ -310,7 +310,7 @@ internal class SimpleKAnnotationTool(
         return (annotation.annotationClass.metadata() as KAnnotationMetadata<A>).getProperties(annotation)
     }
 
-    override fun getProperties(annotation: Annotation): Set<String> {
+    override fun getPropertyNames(annotation: Annotation): Set<String> {
         return annotation.annotationClass.metadata().propertyNames
     }
 

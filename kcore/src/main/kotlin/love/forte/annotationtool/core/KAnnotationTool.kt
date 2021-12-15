@@ -26,12 +26,12 @@ import kotlin.reflect.KType
  *
  *
  * You can implement this interface any way you like,
- * but of course, the library provides a default implementation, as well as an implementation of the instance provided by [KAnnotationTools.getAnnotationTool]: [SimpleKAnnotationTool].
+ * but of course, the library provides a default implementation, as well as an implementation of the instance provided by [KAnnotationTool]: [SimpleKAnnotationTool].
  *
  *
  * @author ForteScarlet
  * @see SimpleKAnnotationTool
- * @see KAnnotationTools
+ * @see KAnnotationTool
  */
 public interface KAnnotationTool {
     /**
@@ -98,7 +98,11 @@ public interface KAnnotationTool {
      * @param annotation An annotation instance.
      * @return property name set. Treat it as **immutable** plz.
      */
-    public fun getProperties(annotation: Annotation): Set<String>
+    public fun getPropertyNames(annotation: Annotation): Set<String>
+
+
+    @Deprecated("Use 'getPropertyNames'", ReplaceWith("getPropertyNames(annotation)"))
+    public fun getProperties(annotation: Annotation): Set<String> = getPropertyNames(annotation)
 
     /**
      * Get annotation type's value types.
@@ -126,7 +130,6 @@ public interface KAnnotationTool {
      * Create an annotation proxy instance.
      *
      * @param annotationType annotation type.
-     * @param classLoader    classLoader.
      * @param properties     annotation's properties.
      * @return annotation proxy instance.
      */
