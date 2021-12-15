@@ -1,6 +1,6 @@
 # Annotation-Tool-(K)Core
 
-Core module of [Annotation-Tool](..) for kotlin, Provides the basic functions of this library。
+[Annotation-Tool](..) 的kotlin core模块, 提供此库的基础功能。
 
 <h2>
 引入
@@ -29,6 +29,6 @@ implementation 'love.forte.annotation-tool:kcore:$version'
 implementation("love.forte.annotation-tool:kcore:$version")
 ```
 
-## Use
+## 使用
 ### Examples
-See [test](src/test)
+前往 [test](src/test) 查看示例代码。

@@ -10,6 +10,7 @@
  *   有关许可证下的权限和限制的具体语言，请参见许可证。
  */
 
+import org.junit.jupiter.api.Test
 import kotlin.reflect.KProperty1
 import kotlin.reflect.full.memberProperties
 import kotlin.reflect.jvm.javaField
@@ -32,12 +33,14 @@ annotation class MyAnnotation(
 )
 
 
-fun main() {
-    for (p: KProperty1<MyAnnotation, *> in MyAnnotation::class.memberProperties) {
-        println(p)
-        println(p.javaGetter?.defaultValue)
-        println(p.javaField)
+class AnnotationTest {
+    @Test
+    fun test() {
+        for (p: KProperty1<MyAnnotation, *> in MyAnnotation::class.memberProperties) {
+            println(p)
+            println(p.javaGetter?.defaultValue)
+            println(p.javaField)
+        }
+
     }
-
-
 }

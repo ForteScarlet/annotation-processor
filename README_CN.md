@@ -10,6 +10,7 @@
 ## 使用
 
 - **核心模块：** [核心](core)
+- **核心模块(for kotlin)：** [kt核心](kcore)
 
 ## 手册
 [手册](guide/cn) | [~~Guide~~](guide/en)

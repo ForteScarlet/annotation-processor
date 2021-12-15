@@ -11,6 +11,7 @@ This is a tool library serving annotations, a small and cute library.
 
 ## use
 - **core module**:  [core](core)
+- **kcore module (annotation tool core for kotlin)**:  [kcore](kcore)
 
 ## Guide
 [手册](guide/cn) | [~~Guide~~](guide/en)

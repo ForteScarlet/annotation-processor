@@ -1,6 +1,6 @@
 import love.forte.annotationtool.AnnotationMapper
-import love.forte.annotationtool.core.SimpleKAnnotationTool
-import love.forte.annotationtool.core.nonConverters
+import love.forte.annotationtool.core.KAnnotationTool
+import org.junit.jupiter.api.Test
 
 annotation class Foo(val name: String)
 
@@ -21,19 +21,22 @@ annotation class Tar(
 @JTar
 class Hi
 
-fun main() {
-    val tool = SimpleKAnnotationTool(
-        mutableMapOf(), mutableMapOf(), nonConverters()
-    )
+class AnnotationTest2 {
 
-    val tar = tool.getAnnotation(Hi::class, Tar::class)
-    println(tar)
-    println(tar?.age)
-    println(tar?.name)
+    @Test
+    fun test() {
+        val tool = KAnnotationTool()
 
-    val jTar = tool.getAnnotation(Hi::class, JTar::class)
-    println(jTar)
-    println(jTar?.age)
-    println(jTar?.name)
+        val tar = tool.getAnnotation(Hi::class, Tar::class)
+        println(tar)
+        println(tar?.age)
+        println(tar?.name)
 
+        val jTar = tool.getAnnotation(Hi::class, JTar::class)
+        println(jTar)
+        println(jTar?.age)
+        println(jTar?.name)
+
+    }
 }
+

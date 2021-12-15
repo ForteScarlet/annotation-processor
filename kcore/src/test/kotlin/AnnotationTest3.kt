@@ -1,6 +1,6 @@
 import love.forte.annotationtool.AnnotationMapper
-import love.forte.annotationtool.core.SimpleKAnnotationTool
-import love.forte.annotationtool.core.nonConverters
+import love.forte.annotationtool.core.KAnnotationTool
+import org.junit.jupiter.api.Test
 
 @Repeatable
 annotation class An(val age: Int, val name: String)
@@ -21,15 +21,14 @@ annotation class An2(
 @An2("forli2")
 @An2("forli3")
 @An2("forli4")
-class AnnotationTest3
+class AnnotationTest3 {
+    @Test
+    fun test() {
+        val tool = KAnnotationTool()
 
-
-fun main() {
-    val tool = SimpleKAnnotationTool(
-        mutableMapOf(), mutableMapOf(), nonConverters()
-    )
-    val anList = tool.getAnnotations(AnnotationTest3::class, An::class)
-    for (an in anList) {
-        println(an)
+        val anList = tool.getAnnotations(AnnotationTest3::class, An::class)
+        for (an in anList) {
+            println(an)
+        }
     }
 }
