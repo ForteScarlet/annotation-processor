@@ -18,6 +18,7 @@ This is a tool library serving annotations, a small and cute library.
 
 ## Examples
 See [core module tests](core/src/test)
+See [kcore module tests](kcore/src/test)
 
 ## Quick Facts
 
