@@ -20,7 +20,7 @@ abstract class Dep(val groupId: String, val id: String, val version: String?) {
 
 object P {
     const val GROUP = "love.forte.annotation-tool"
-    const val VERSION = "0.6.0"
+    const val VERSION = "0.7.0"
     const val DESCRIPTION = "An exquisite annotation tool."
 }
 
