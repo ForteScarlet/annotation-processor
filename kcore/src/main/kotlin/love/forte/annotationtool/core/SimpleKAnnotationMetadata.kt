@@ -95,9 +95,9 @@ internal class SimpleKAnnotationMetadata<A : Annotation>(override val annotation
         }.toMap()
 
         val namingMaps: MutableMap<KClass<out Annotation>, MutableMap<String, String>> = WeakHashMap()
+        val mapper: AnnotationMapper? = annotationType.findAnnotation()
 
         for (property in properties) {
-            val mapper: AnnotationMapper? = annotationType.findAnnotation()
             val defaultMapType: KClass<out Annotation>? = mapper?.value?.takeIf { it.size == 1 }?.first()
 
             // namingMap
@@ -151,13 +151,13 @@ internal class SimpleKAnnotationMetadata<A : Annotation>(override val annotation
         val targetMetadata: KAnnotationMetadata<out Annotation> = KAnnotationMetadata.resolve(targetType)
         val targetNames: Set<String> = targetMetadata.propertyNames
 
-        val map: MutableMap<String, String> = namingMap.toMutableMap()
+        val namingMap0: MutableMap<String, String> = namingMap.toMutableMap()
         for (targetName in targetNames) {
-            if (targetName !in map && targetName in propertyTypes) {
-                map[targetName] = targetName
+            if (targetName !in namingMap0 && targetName in propertyTypes) {
+                namingMap0[targetName] = targetName
             }
         }
-        return map
+        return namingMap0
     }
 
     override fun getPropertyNamingMap(targetType: KClass<out Annotation>, targetPropertyName: String): String? {
@@ -195,7 +195,9 @@ internal class SimpleKAnnotationMetadata<A : Annotation>(override val annotation
             namingMaps: MutableMap<KClass<out Annotation>, MutableMap<String, String>>
         ) {
             val name = property.name
-            val properties: List<AnnotationMapper.Property> = property.findAnnotations()
+            val properties: List<AnnotationMapper.Property> = property.findAnnotations<AnnotationMapper.Property>().ifEmpty {
+                property.getter.findAnnotations()
+            }
 
             if (properties.isNotEmpty()) {
                 for (mapperProperty in properties) {

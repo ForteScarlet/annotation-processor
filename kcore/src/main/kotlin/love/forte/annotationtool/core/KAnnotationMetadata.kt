@@ -224,7 +224,7 @@ internal class SimpleCacheableKAnnotationMetadataFactory : KAnnotationMetadataFa
         WeakHashMap<KClass<out Annotation>, KAnnotationMetadata<*>>()
 
     private operator fun <A : Annotation> get(annotationType: KClass<A>): KAnnotationMetadata<A>? {
-        @Suppress("UNCHECKED_CAST") return cache[annotationType] as KAnnotationMetadata<A>
+        @Suppress("UNCHECKED_CAST") return cache[annotationType] as? KAnnotationMetadata<A>
     }
 
     private fun <A : Annotation> put(annotationType: KClass<A>): KAnnotationMetadata<A> {
@@ -241,5 +241,5 @@ internal class SimpleCacheableKAnnotationMetadataFactory : KAnnotationMetadataFa
 }
 
 
-public fun <A: Annotation> KClass<A>.metadata(): KAnnotationMetadata<A> = KAnnotationMetadata.resolve(this)
-public inline fun <reified A: Annotation> metadata(): KAnnotationMetadata<A> = A::class.metadata()
+public fun <A : Annotation> KClass<A>.metadata(): KAnnotationMetadata<A> = KAnnotationMetadata.resolve(this)
+public inline fun <reified A : Annotation> metadata(): KAnnotationMetadata<A> = A::class.metadata()
