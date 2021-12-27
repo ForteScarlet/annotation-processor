@@ -38,6 +38,17 @@ internal object NonConverters : Converters {
         val safeCast: TO? = to.safeCast(instance)
         if (safeCast != null) return safeCast
 
+        @Suppress("UNCHECKED_CAST")
+        if (from == Class::class && to == KClass::class) {
+            // class to kClass
+            return (instance as Class<*>).kotlin as TO
+        }
+        @Suppress("UNCHECKED_CAST")
+        if (from == KClass::class && to == Class::class) {
+            // class to kClass
+            return (instance as KClass<*>).java as TO
+        }
+
         if (fromType in primitives && to in primitives) {
             when {
                 fromType.isSubclassOf(Number::class) -> {
