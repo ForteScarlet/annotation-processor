@@ -16,7 +16,6 @@ plugins {
 
 dependencies {
     api(project(":api"))
-    compileOnly(V.Kotlin.Reflect.NOTATION)
     testImplementation(V.Jupiter.Api.NOTATION)
     testRuntimeOnly(V.Jupiter.Engine.NOTATION)
     compileOnly(V.Jetbrains.Annotations.NOTATION)
