@@ -16,9 +16,10 @@ plugins {
 
 dependencies {
     api(project(":api"))
+    compileOnly(V.Kotlin.Reflect.NOTATION)
     testImplementation(V.Jupiter.Api.NOTATION)
     testRuntimeOnly(V.Jupiter.Engine.NOTATION)
     compileOnly(V.Jetbrains.Annotations.NOTATION)
     testCompileOnly(V.Jetbrains.Annotations.NOTATION)
-    testImplementation("cn.hutool:hutool-core:5.7.16")
+    testImplementation("cn.hutool:hutool-core:5.7.17")
 }

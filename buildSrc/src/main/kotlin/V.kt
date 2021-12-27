@@ -51,6 +51,32 @@ object V {
         object Engine : Jupiter("junit-jupiter-engine", "5.8.1")
     }
 
+    /**
+     * Kotlin相关依赖项
+     */
+    sealed class Kotlin(id: String) :
+        Dep("org.jetbrains.kotlin", "kotlin-$id", VERSION) {
+        companion object {
+            const val VERSION = "1.6.0"
+        }
+
+        sealed class Stdlib(id: String) : Kotlin(id = "stdlib-$id") {
+            object Common : Stdlib("common")
+        }
+
+        object GradlePlugin : Kotlin("gradle-plugin")
+        object CompilerEmbeddable : Kotlin("compiler-embeddable")
+        object Reflect : Kotlin("reflect")
+        sealed class Test(id: String) : Kotlin("test-$id") {
+            object Common : Test("common")
+            object Junit : Test("junit")
+            object Junit5 : Test("junit5")
+            object Js : Test("js")
+            object AnnotationsCommon : Test("annotations-common")
+        }
+    }
+
+
 }
 
 

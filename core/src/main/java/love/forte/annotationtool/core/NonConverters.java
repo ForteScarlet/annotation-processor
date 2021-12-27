@@ -12,6 +12,8 @@
 
 package love.forte.annotationtool.core;
 
+import kotlin.jvm.JvmClassMappingKt;
+import kotlin.reflect.KClass;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -61,6 +63,14 @@ public final class NonConverters implements Converters {
 
         if (from.equals(to) || to.isAssignableFrom(from)) {
             return (TO) instance;
+        }
+
+        if (from.equals(Class.class) && to.getName().equals("kotlin.reflect.KClass")) {
+            return (TO) JvmClassMappingKt.getKotlinClass((Class<?>) instance);
+        }
+
+        if (from.getName().equals("kotlin.reflect.KClass") && to.equals(Class.class)) {
+            return (TO) JvmClassMappingKt.getJavaClass((KClass<?>) instance);
         }
 
         if (to.isPrimitive()) {
