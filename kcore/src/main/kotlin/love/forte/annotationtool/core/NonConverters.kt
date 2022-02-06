@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2021-2021 ForteScarlet <https://github.com/ForteScarlet>
+ *  Copyright (c) 2021-2022 ForteScarlet <https://github.com/ForteScarlet>
  *
  *  根据 Apache License 2.0 获得许可；
  *  除非遵守许可，否则您不得使用此文件。
@@ -24,7 +24,8 @@ import kotlin.reflect.safeCast
 internal object NonConverters : Converters {
     private val primitives: Set<KClass<*>> = setOf(
         Byte::class, Short::class, Int::class, Long::class,
-        Double::class, Float::class, Char::class, Boolean::class
+        Double::class, Float::class, Char::class, Boolean::class,
+        String::class, CharSequence::class
     )
 
     /**
@@ -54,7 +55,7 @@ internal object NonConverters : Converters {
                 fromType.isSubclassOf(Number::class) -> {
                     @Suppress("UNCHECKED_CAST")
                     fromType as KClass<out Number>
-                    when (to) {
+                    val converted = when (to) {
                         Byte::class -> to.cast(fromType.cast(instance).toByte())
                         Short::class -> to.cast(fromType.cast(instance).toShort())
                         Int::class -> to.cast(fromType.cast(instance).toInt())
@@ -64,12 +65,14 @@ internal object NonConverters : Converters {
                         Double::class -> to.cast(fromType.cast(instance).toDouble())
                         String::class -> to.cast(fromType.cast(instance).toString())
                         CharSequence::class -> to.cast(fromType.cast(instance).toString())
+                        else -> null
                     }
+                    if (converted != null) return converted
                 }
                 fromType == String::class -> {
                     @Suppress("UNCHECKED_CAST")
                     fromType as KClass<out String>
-                    when (to) {
+                    val converted = when (to) {
                         Byte::class -> to.cast(fromType.cast(instance).toByte())
                         Short::class -> to.cast(fromType.cast(instance).toShort())
                         Int::class -> to.cast(fromType.cast(instance).toInt())
@@ -82,7 +85,9 @@ internal object NonConverters : Converters {
                         Double::class -> to.cast(fromType.cast(instance).toDouble())
                         String::class -> to.cast(fromType.cast(instance))
                         CharSequence::class -> to.cast(fromType.cast(instance))
+                        else -> null
                     }
+                    if (converted != null) return converted
                 }
             }
 
