@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2021-2021 ForteScarlet <https://github.com/ForteScarlet>
+ *  Copyright (c) 2021-2022 ForteScarlet <https://github.com/ForteScarlet>
  *
  *  根据 Apache License 2.0 获得许可；
  *  除非遵守许可，否则您不得使用此文件。
@@ -175,6 +175,9 @@ internal class SimpleKAnnotationTool(
         excludes: Set<String>,
         annotationList: MutableList<A>
     ) {
+        // 先直接通过类型find，这是直接查找的。
+        val directAnnotations = findAnnotations(annotationType)
+        annotationList.addAll(directAnnotations)
 
         // 先直接查询所有注解.
         val foundAnnotations = annotations
@@ -184,24 +187,24 @@ internal class SimpleKAnnotationTool(
                 continue
             }
             val annotationClass = annotation.annotationClass
-            if (annotationClass == annotationType) {
-                annotationList.add(annotationType.cast(annotation))
+            // if (annotationClass == annotationType) {
+            //     annotationList.add(annotationType.cast(annotation))
+            // } else {
+            // 接着寻找可映射的
+            val currentExclude = excludes + setOf(annotationClass.name)
+            val gotFromAnnotation = getAnnotationFromAnnotation(annotation, annotationType, currentExclude)
+            if (gotFromAnnotation != null) {
+                annotationList.add(gotFromAnnotation)
             } else {
-                val currentExclude = excludes + setOf(annotationClass.name)
-                val gotFromAnnotation = getAnnotationFromAnnotation(annotation, annotationType, currentExclude)
-                if (gotFromAnnotation != null) {
-                    annotationList.add(gotFromAnnotation)
-                } else {
-                    // cannot map, deep.
-                    annotationClass.includeAnnotations(
-                        annotationType,
-                        currentExclude,
-                        annotationList
-                    )
-                }
-
-
+                // cannot map, deep.
+                annotationClass.includeAnnotations(
+                    annotationType,
+                    currentExclude,
+                    annotationList
+                )
             }
+
+            // }
 
         }
     }
